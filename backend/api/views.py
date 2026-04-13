@@ -19,7 +19,16 @@ def get_rooms(request):
             "room_type": room.room_type,
             "price": str(room.price),
             "capacity": room.capacity,
-            "available": room.available
+            "available": room.available,
+
+            # 🔥 IMAGES
+            "image": request.build_absolute_uri(room.image.url) if room.image else None,
+            "image2": request.build_absolute_uri(room.image2.url) if room.image2 else None,
+            "image3": request.build_absolute_uri(room.image3.url) if room.image3 else None,
+
+            "wifi": room.wifi,
+            "ac": room.ac,
+            "tv": room.tv,
         })
 
     return Response(data)
@@ -29,17 +38,20 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+
+
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])  # 🔥 PROTECT API
 def create_reservation(request):
-    user_id = request.data.get('user_id')
+    user = request.user  # 🔥 GET LOGGED USER
     room_id = request.data.get('room_id')
     check_in = request.data.get('check_in')
     check_out = request.data.get('check_out')
 
-    user = get_object_or_404(User, id=user_id)
     room = get_object_or_404(Room, id=room_id)
 
-    # 🔥 CHECK FOR EXISTING BOOKINGS
     existing = Reservation.objects.filter(
         room=room,
         check_in__lt=check_out,
@@ -47,20 +59,16 @@ def create_reservation(request):
     )
 
     if existing.exists():
-        return Response({
-            "error": "Room already booked for these dates"
-        }, status=400)
+        return Response({"error": "Room already booked"}, status=400)
 
-    reservation = Reservation.objects.create(
+    Reservation.objects.create(
         user=user,
         room=room,
         check_in=check_in,
         check_out=check_out
     )
 
-    return Response({
-        "message": "Reservation created successfully"
-    })
+    return Response({"message": "Booking successful"})
 
 
 
@@ -101,3 +109,38 @@ def login_user(request):
         "access": str(refresh.access_token),
         "refresh": str(refresh)
     })
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_reservations(request):
+    user = request.user
+
+    reservations = Reservation.objects.filter(user=user)
+
+    data = []
+    for r in reservations:
+        data.append({
+            "id": r.id,
+            "room": r.room.room_type,
+            "check_in": str(r.check_in),
+            "check_out": str(r.check_out),
+        })
+
+    return Response(data)
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def cancel_reservation(request, id):
+    reservation = get_object_or_404(Reservation, id=id, user=request.user)
+    reservation.delete()
+
+    return Response({"message": "Booking cancelled"})

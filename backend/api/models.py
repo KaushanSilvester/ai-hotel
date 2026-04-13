@@ -14,6 +14,15 @@ class Room(models.Model):
     capacity = models.IntegerField()
     available = models.BooleanField(default=True)
 
+    # ✅ CORRECT WAY (FIELDS ONLY)
+    image = models.ImageField(upload_to='rooms/', null=True, blank=True)
+    image2 = models.ImageField(upload_to='rooms/', null=True, blank=True)
+    image3 = models.ImageField(upload_to='rooms/', null=True, blank=True)
+
+    wifi = models.BooleanField(default=False)
+    ac = models.BooleanField(default=False)
+    tv = models.BooleanField(default=False)
+
     def __str__(self):
         return self.room_type
 
