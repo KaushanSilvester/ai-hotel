@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom"; // 🔥 added useLocation
 
 // ─── Google Icon ───────────────────────────────────────────────────────────────
 const GoogleIcon = () => (
@@ -34,6 +34,10 @@ const EyeClosed = () => (
 // ─── Main Login Component ──────────────────────────────────────────────────────
 function Login({ setToken }) {
   const navigate = useNavigate();
+  const location = useLocation(); // 🔥
+
+  // 🔥 Detect if redirected here because token expired
+  const sessionExpired = new URLSearchParams(location.search).get("expired") === "1";
 
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -58,7 +62,7 @@ function Login({ setToken }) {
       setToken(res.data.access);
       navigate("/dashboard");
     } catch (err) {
-      setError("Invalid email or password. Please try again.");
+      setError("Invalid username or password. Please try again.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -109,241 +113,113 @@ function Login({ setToken }) {
           padding: 36px;
           color: #fff;
         }
-        .login-hero-content h2 {
-          font-size: 26px;
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .login-hero-content p {
-          font-size: 14px;
-          opacity: 0.85;
-          margin-bottom: 18px;
-          line-height: 1.5;
-        }
-        .login-hero-features {
-          list-style: none;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .login-hero-features li {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 13.5px;
-          opacity: 0.9;
-        }
-        .feature-dot {
-          width: 8px; height: 8px;
-          border-radius: 50%;
-          background: #60a5fa;
-          flex-shrink: 0;
-        }
+        .login-hero-content h2 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+        .login-hero-content p  { font-size: 14px; opacity: 0.85; margin-bottom: 18px; line-height: 1.5; }
+        .login-hero-features   { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+        .login-hero-features li { display: flex; align-items: center; gap: 10px; font-size: 13.5px; opacity: 0.9; }
+        .feature-dot { width: 8px; height: 8px; border-radius: 50%; background: #60a5fa; flex-shrink: 0; }
 
         /* ── RIGHT PANEL ── */
-        .login-right {
-          flex: 1;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
+        .login-right { flex: 1; display: flex; justify-content: center; align-items: center; }
         .login-card {
-          width: 100%;
-          max-width: 400px;
-          background: #fff;
-          border-radius: 20px;
+          width: 100%; max-width: 400px;
+          background: #fff; border-radius: 20px;
           padding: 44px 40px;
           box-shadow: 0 8px 40px rgba(0,0,0,0.08);
         }
 
-        /* App icon */
         .login-app-icon {
-          width: 56px; height: 56px;
-          background: #2563eb;
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 20px;
+          width: 56px; height: 56px; background: #2563eb;
+          border-radius: 16px; display: flex; align-items: center;
+          justify-content: center; margin: 0 auto 20px;
         }
+        .login-card h2 { text-align: center; font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .login-card .subtitle { text-align: center; font-size: 13.5px; color: #6b7280; margin-bottom: 28px; }
 
-        .login-card h2 {
-          text-align: center;
-          font-size: 22px;
-          font-weight: 700;
-          color: #111827;
-          margin-bottom: 6px;
+        /* 🔥 Session expired banner */
+        .session-expired-banner {
+          display: flex; align-items: center; gap: 10px;
+          background: #fef3c7; border: 1.5px solid #fcd34d;
+          border-radius: 10px; padding: 11px 14px;
+          font-size: 13px; color: #92400e; font-weight: 500;
+          margin-bottom: 20px;
+          animation: fadeSlideIn 0.3s ease;
         }
-        .login-card .subtitle {
-          text-align: center;
-          font-size: 13.5px;
-          color: #6b7280;
-          margin-bottom: 28px;
+        .session-expired-banner span { font-size: 16px; flex-shrink: 0; }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ── FORM FIELDS ── */
         .field-group { margin-bottom: 16px; }
         .field-label {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 13.5px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 7px;
+          display: flex; justify-content: space-between; align-items: center;
+          font-size: 13.5px; font-weight: 600; color: #374151; margin-bottom: 7px;
         }
-        .forgot-link {
-          font-size: 12.5px;
-          font-weight: 500;
-          color: #2563eb;
-          text-decoration: none;
-        }
+        .forgot-link { font-size: 12.5px; font-weight: 500; color: #2563eb; text-decoration: none; }
         .forgot-link:hover { text-decoration: underline; }
 
-        .input-wrap {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-        .input-icon {
-          position: absolute;
-          left: 13px;
-          display: flex;
-          align-items: center;
-          pointer-events: none;
-        }
+        .input-wrap { position: relative; display: flex; align-items: center; }
+        .input-icon { position: absolute; left: 13px; display: flex; align-items: center; pointer-events: none; }
         .login-input {
-          width: 100%;
-          padding: 11px 40px 11px 40px;
-          border: 1.5px solid #e5e7eb;
-          border-radius: 10px;
-          font-size: 14px;
-          font-family: 'DM Sans', sans-serif;
-          color: #111827;
-          background: #f9fafb;
-          outline: none;
+          width: 100%; padding: 11px 40px 11px 40px;
+          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          font-size: 14px; font-family: 'DM Sans', sans-serif;
+          color: #111827; background: #f9fafb; outline: none;
           transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
         }
         .login-input::placeholder { color: #9ca3af; }
-        .login-input:focus {
-          border-color: #2563eb;
-          background: #fff;
-          box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        }
-        .eye-toggle {
-          position: absolute;
-          right: 13px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          padding: 2px;
-        }
+        .login-input:focus { border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .eye-toggle { position: absolute; right: 13px; background: none; border: none; cursor: pointer; display: flex; align-items: center; padding: 2px; }
 
         /* ── ERROR ── */
-        .login-error {
-          font-size: 12.5px;
-          color: #dc2626;
-          margin-top: -8px;
-          margin-bottom: 8px;
-          padding: 0 2px;
-        }
+        .login-error { font-size: 12.5px; color: #dc2626; margin-top: -8px; margin-bottom: 8px; padding: 0 2px; }
 
         /* ── SIGN IN BUTTON ── */
         .btn-signin {
-          width: 100%;
-          padding: 13px;
-          background: #2563eb;
-          color: #fff;
-          border: none;
-          border-radius: 10px;
-          font-size: 15px;
-          font-weight: 700;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          margin-top: 6px;
+          width: 100%; padding: 13px; background: #2563eb; color: #fff;
+          border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+          font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 6px;
           transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
-          box-shadow: 0 4px 14px rgba(37,99,235,0.3);
-          letter-spacing: 0.01em;
+          box-shadow: 0 4px 14px rgba(37,99,235,0.3); letter-spacing: 0.01em;
         }
-        .btn-signin:hover:not(:disabled) {
-          background: #1d4ed8;
-          box-shadow: 0 6px 20px rgba(37,99,235,0.38);
-          transform: translateY(-1px);
-        }
+        .btn-signin:hover:not(:disabled) { background: #1d4ed8; box-shadow: 0 6px 20px rgba(37,99,235,0.38); transform: translateY(-1px); }
         .btn-signin:active:not(:disabled) { transform: translateY(0); }
         .btn-signin:disabled { opacity: 0.65; cursor: not-allowed; }
 
         /* ── DIVIDER ── */
         .or-divider {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 22px 0;
-          color: #9ca3af;
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
+          display: flex; align-items: center; gap: 12px; margin: 22px 0;
+          color: #9ca3af; font-size: 12px; font-weight: 600;
+          letter-spacing: 0.08em; text-transform: uppercase;
         }
-        .or-divider::before, .or-divider::after {
-          content: ''; flex: 1; height: 1px; background: #e5e7eb;
-        }
+        .or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
 
         /* ── SOCIAL BUTTONS ── */
-        .social-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-        }
+        .social-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .btn-social {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 9px;
-          padding: 11px 16px;
-          border: 1.5px solid #e5e7eb;
-          border-radius: 10px;
-          background: #fff;
-          font-size: 14px;
-          font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          color: #111827;
-          cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 9px;
+          padding: 11px 16px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+          background: #fff; font-size: 14px; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; color: #111827; cursor: pointer;
           transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
         }
-        .btn-social:hover {
-          background: #f9fafb;
-          border-color: #d1d5db;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        }
+        .btn-social:hover { background: #f9fafb; border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 
         /* ── FOOTER ── */
-        .login-footer {
-          text-align: center;
-          margin-top: 22px;
-          font-size: 13.5px;
-          color: #6b7280;
-        }
-        .login-footer a {
-          color: #2563eb;
-          font-weight: 600;
-          text-decoration: none;
-        }
+        .login-footer { text-align: center; margin-top: 22px; font-size: 13.5px; color: #6b7280; }
+        .login-footer a { color: #2563eb; font-weight: 600; text-decoration: none; }
         .login-footer a:hover { text-decoration: underline; }
 
         /* ── SPINNER ── */
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinner {
           width: 16px; height: 16px;
-          border: 2px solid rgba(255,255,255,0.4);
-          border-top-color: #fff;
-          border-radius: 50%;
-          display: inline-block;
+          border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
+          border-radius: 50%; display: inline-block;
           animation: spin 0.7s linear infinite;
-          margin-right: 8px;
-          vertical-align: middle;
+          margin-right: 8px; vertical-align: middle;
         }
 
         @media (max-width: 700px) {
@@ -385,9 +261,17 @@ function Login({ setToken }) {
             <h2>Welcome Back</h2>
             <p className="subtitle">Sign in to manage your bookings and preferences</p>
 
-            {/* Email */}
+            {/* 🔥 Session expired banner */}
+            {sessionExpired && (
+              <div className="session-expired-banner">
+                <span>⏰</span>
+                Your session expired. Please sign in again.
+              </div>
+            )}
+
+            {/* Username */}
             <div className="field-group">
-              <div className="field-label">Email Address</div>
+              <div className="field-label">Username</div>
               <div className="input-wrap">
                 <span className="input-icon">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -402,7 +286,7 @@ function Login({ setToken }) {
                   value={form.username}
                   onChange={handleChange}
                   onKeyDown={handleKeyDown}
-                  autoComplete="email"
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -450,12 +334,8 @@ function Login({ setToken }) {
 
             {/* Social */}
             <div className="social-row">
-              <button className="btn-social">
-                <GoogleIcon /> Google
-              </button>
-              <button className="btn-social">
-                <FacebookIcon /> Facebook
-              </button>
+              <button className="btn-social"><GoogleIcon /> Google</button>
+              <button className="btn-social"><FacebookIcon /> Facebook</button>
             </div>
 
             {/* Footer */}

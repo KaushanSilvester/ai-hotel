@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import "./axiosSetup";  // add this at the top
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

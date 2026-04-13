@@ -145,22 +145,33 @@ function Home() {
     return result;
   }, [rooms, minPrice, maxPrice, guests, selectedTypes, selectedAmenities, sortBy]);
 
-  const handleBooking = async (roomId) => {
+  const handleBooking = (roomId) => {
     const token = localStorage.getItem("token");
-    if (!token)            { setBookingStatus({ [roomId]: "error" }); return; }
-    if (!checkIn || !checkOut) { setBookingStatus({ [roomId]: "error" }); return; }
-    setBookingStatus({ [roomId]: "loading" });
-    try {
-      await axios.post("http://localhost:8000/api/book/",
-        { room_id: roomId, check_in: checkIn, check_out: checkOut },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setBookingStatus({ [roomId]: "success" });
-      setTimeout(() => setBookingStatus({}), 3000);
-    } catch {
-      setBookingStatus({ [roomId]: "error" });
-      setTimeout(() => setBookingStatus({}), 3000);
+    const room  = rooms.find(r => r.id === roomId);
+
+    // Not logged in → go to login
+    if (!token) {
+      navigate("/login");
+      return;
     }
+
+    // No dates selected → show inline error on that card only
+    if (!checkIn || !checkOut) {
+      setBookingStatus(prev => ({ ...prev, [roomId]: "no_dates" }));
+      setTimeout(() => setBookingStatus(prev => { const n={...prev}; delete n[roomId]; return n; }), 3000);
+      return;
+    }
+
+    // Check-out before check-in
+    const nights = (new Date(checkOut) - new Date(checkIn)) / (1000*60*60*24);
+    if (nights <= 0) {
+      setBookingStatus(prev => ({ ...prev, [roomId]: "bad_dates" }));
+      setTimeout(() => setBookingStatus(prev => { const n={...prev}; delete n[roomId]; return n; }), 3000);
+      return;
+    }
+
+    // ✅ All good — go to payment page
+    navigate("/payment", { state: { room, checkIn, checkOut, guests } });
   };
 
   const renderStars = (rating) =>
@@ -572,12 +583,12 @@ function Home() {
                         <span className="price-per"> /night</span>
                       </div>
                       <button
-                        className={`book-btn ${status === "success" ? "success" : status === "error" ? "error" : ""}`}
+                        className={`book-btn ${status === "no_dates" || status === "bad_dates" ? "error" : ""}`}
                         onClick={() => handleBooking(room.id)}
-                        disabled={status === "loading" || status === "success"}
                       >
-                        {status === "loading" && <span className="spinner" />}
-                        {status === "success" ? "✓ Booked!" : status === "error" ? "Try again" : "Book Now"}
+                        {status === "no_dates"  ? "⚠️ Select dates first" :
+                         status === "bad_dates" ? "⚠️ Fix your dates" :
+                         "Book Now →"}
                       </button>
                     </div>
                   </div>
@@ -623,7 +634,7 @@ function Home() {
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <button className="modal-close" onClick={() => setSelectedRoom(null)}>Close</button>
-                  <button className="book-btn" onClick={() => { handleBooking(selectedRoom.id); setSelectedRoom(null); }}>Book Now</button>
+                  <button className="book-btn" onClick={() => { handleBooking(selectedRoom.id); }}>Book Now →</button>
                 </div>
               </div>
             </div>
