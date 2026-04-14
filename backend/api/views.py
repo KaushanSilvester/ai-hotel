@@ -369,4 +369,70 @@ def login_user(request):
     if user is None:
         return Response({"error": "Invalid credentials."}, status=401)
     refresh = RefreshToken.for_user(user)
-    return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
+    return Response({
+        "access":   str(refresh.access_token),
+        "refresh":  str(refresh),
+        "is_staff": user.is_staff,   # 🔥 so frontend knows if user is admin
+    })
+
+
+# ── 🔥 AI Chatbot endpoint ────────────────────────────────────────────────────
+HOTEL_SYSTEM_PROMPT = """You are Aria, the AI concierge for HotelAI — a luxury 5-star hotel in Sri Lanka. You are warm, elegant, and knowledgeable. You speak in a refined but friendly tone, like a seasoned concierge at a grand hotel.
+
+You help guests with:
+- Room information (types, pricing, amenities, availability)
+- Booking guidance (how to reserve, check-in/out, cancellation)
+- Hotel facilities (restaurant, spa, pool, gym)
+- Local area tips (things to do in Sri Lanka, nearby attractions)
+- General hotel policies (payment, pets, smoking)
+
+Hotel details:
+- Name: HotelAI Luxury Resort, Nuwara Eliya, Sri Lanka
+- Rating: 5 stars, established 2024
+- Rooms: 48 luxury rooms across 6 types
+  • Superior Single Room: Rs. 11,000/night, 1 guest, 25m²
+  • Deluxe Double Room: Rs. 18,000/night, 2 guests, 35m²
+  • Ocean View Suite: Rs. 22,000/night, 2 guests, 45m², sea view
+  • Family Room: Rs. 25,000/night, up to 4 guests
+  • Penthouse Suite: Rs. 45,000/night, 2 guests, panoramic views
+- Amenities: WiFi, AC, TV, pool, spa, gym, restaurant
+- Restaurant hours: Breakfast 7–10:30, Lunch 12–14:30, Dinner 19–22:30
+- Contact: +94 52 222 2881 | WhatsApp: +94 77 123 4567 | reservations@hotelai.lk
+- Check-in: 2:00 PM | Check-out: 12:00 PM
+- Payment: Stripe (card), PayHere, or Pay at Hotel
+- Cancellation: Free cancellation with Pay at Hotel option
+- Taxes: 10% added to all room rates
+
+Keep responses concise (2-4 sentences). Never make up specific booking details. If someone wants to book, guide them to the Rooms page at /rooms."""
+
+
+@api_view(['POST'])
+def chat_with_aria(request):
+    """
+    Smart hotel chatbot — uses local rule-based engine.
+    No external API needed. Reads real data from database.
+    """
+    from .chatbot_engine import generate_response
+
+    messages = request.data.get('messages', [])
+    if not messages:
+        return Response({"error": "No messages provided."}, status=400)
+
+    # Get the latest user message
+    last_user_msg = ""
+    for m in reversed(messages):
+        if m.get('role') == 'user' and m.get('content', '').strip():
+            last_user_msg = m['content'].strip()
+            break
+
+    if not last_user_msg:
+        return Response({"error": "No user message found."}, status=400)
+
+    # Pass the authenticated user if available (for personalised responses)
+    user = request.user if request.user.is_authenticated else None
+
+    try:
+        reply = generate_response(last_user_msg, user=user)
+        return Response({"reply": reply})
+    except Exception as e:
+        return Response({"reply": "I apologise, I'm having a brief moment. Please try again or call us at +94 52 222 2881."})

@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    chat_with_aria,
     get_rooms, get_room_detail,
     create_reservation, my_reservations, cancel_reservation,
     register_user, login_user,
@@ -25,4 +26,7 @@ urlpatterns = [
     path('rooms/<int:room_id>/reviews/create/',   create_review),
     path('rooms/<int:room_id>/reviews/can/',      can_review),
     path('reviews/<int:review_id>/delete/',       delete_review),
+
+    # 🔥 AI Chatbot
+    path('chat/',                                 chat_with_aria),
 ]

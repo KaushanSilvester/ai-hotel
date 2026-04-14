@@ -225,15 +225,56 @@ export default function LandingPage({ token }) {
           transition: color 0.4s;
         }
 
-        /* Right */
-        .nav-right { display: flex; align-items: center; gap: 12px; }
-        .nav-auth-link {
-          font-size: 11px; font-weight: 500; letter-spacing: 0.14em;
-          text-transform: uppercase; color: ${t.navAuthColor};
-          text-decoration: none; transition: color 0.2s;
+        /* Right: auth + menu */
+        .nav-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-signin-btn {
+          padding: 8px 20px;
+          border: 1.5px solid rgba(184,149,42,0.55);
+          color: #b8952a; background: transparent;
+          font-family: 'Jost', sans-serif;
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          text-transform: uppercase; text-decoration: none;
+          cursor: pointer; transition: all 0.2s;
+          display: inline-flex; align-items: center;
         }
-        .nav-auth-link:hover { color: #b8952a; }
-        .nav-auth-sep { color: ${t.navAuthSep}; font-size: 12px; transition: color 0.4s; }
+        .nav-signin-btn:hover { background: rgba(184,149,42,0.12); border-color: #b8952a; }
+
+        .nav-register-btn {
+          padding: 8px 20px;
+          background: #b8952a; color: #fff; border: none;
+          font-family: 'Jost', sans-serif;
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          text-transform: uppercase; text-decoration: none;
+          cursor: pointer; transition: background 0.2s;
+          display: inline-flex; align-items: center;
+        }
+        .nav-register-btn:hover { background: #a07d20; }
+
+        .nav-user-chip {
+          display: flex; align-items: center; gap: 8px;
+          background: rgba(184,149,42,0.1);
+          border: 1px solid rgba(184,149,42,0.3);
+          padding: 7px 14px; color: #b8952a;
+          font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
+          text-decoration: none; transition: all 0.2s;
+        }
+        .nav-user-chip:hover { background: rgba(184,149,42,0.18); }
+        .nav-user-avatar {
+          width: 22px; height: 22px; background: #b8952a; color: #fff;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; font-weight: 700; border-radius: 50%;
+        }
+        .nav-logout-btn {
+          padding: 7px 16px; background: transparent;
+          border: 1px solid rgba(220,38,38,0.3);
+          color: rgba(220,38,38,0.65);
+          font-family: 'Jost', sans-serif;
+          font-size: 10px; font-weight: 500; letter-spacing: 0.14em;
+          text-transform: uppercase; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-logout-btn:hover { border-color: rgba(220,38,38,0.6); color: #ef4444; background: rgba(220,38,38,0.06); }
+        .nav-auth-sep { display: none; }
 
         /* 🔥 Theme toggle button */
         .theme-toggle {
@@ -262,6 +303,37 @@ export default function LandingPage({ token }) {
         .nav-menu-btn:hover { border-color: #b8952a; color: #b8952a; }
         .hamburger { display: flex; flex-direction: column; gap: 4px; width: 18px; }
         .hamburger span { height: 1.5px; background: ${t.hamburgerBg}; border-radius: 2px; display: block; transition: all 0.3s; }
+
+        /* Auth buttons */
+        .nav-signin-btn {
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          text-transform: uppercase; color: rgba(255,255,255,0.85);
+          text-decoration: none; padding: 8px 18px;
+          border: 1px solid rgba(255,255,255,0.3);
+          transition: all 0.2s; white-space: nowrap;
+          display: flex; align-items: center;
+        }
+        .nav-signin-btn:hover { border-color: #b8952a; color: #b8952a; }
+
+        .nav-register-btn {
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          text-transform: uppercase; color: #fff;
+          text-decoration: none; padding: 8px 18px;
+          background: #b8952a; border: 1px solid #b8952a;
+          transition: all 0.2s; white-space: nowrap;
+          display: flex; align-items: center;
+        }
+        .nav-register-btn:hover { background: #a07d20; border-color: #a07d20; }
+
+        .nav-logout-btn {
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          text-transform: uppercase; color: rgba(220,38,38,0.75);
+          background: none; padding: 8px 16px;
+          border: 1px solid rgba(220,38,38,0.25);
+          cursor: pointer; font-family: 'Jost', sans-serif;
+          transition: all 0.2s; white-space: nowrap;
+        }
+        .nav-logout-btn:hover { border-color: rgba(220,38,38,0.6); color: #ef4444; }
 
         /* ── SLIDE MENU ── */
         .slide-menu-overlay {
@@ -419,6 +491,20 @@ export default function LandingPage({ token }) {
           text-decoration: none; transition: border-color 0.2s; display: inline-block;
         }
         .hero-btn-ghost:hover { border-color: rgba(255,255,255,0.9); }
+        /* Hero auth row */
+        .hero-auth-row {
+          display: flex; align-items: center; gap: 14px; margin-top: 20px;
+          opacity: 0; transform: translateY(14px);
+          transition: opacity 0.7s 0.55s, transform 0.7s 0.55s;
+        }
+        .hero-auth-row.in { opacity: 1; transform: translateY(0); }
+        .hero-auth-signin { font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); text-decoration: none; padding: 8px 20px; border: 1px solid rgba(255,255,255,0.3); transition: all 0.2s; display: inline-flex; align-items: center; }
+        .hero-auth-signin:hover { border-color: rgba(255,255,255,0.7); color: #fff; }
+        .hero-auth-register { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #fff; text-decoration: none; padding: 8px 20px; background: rgba(184,149,42,0.85); border: 1px solid #b8952a; transition: all 0.2s; display: inline-flex; align-items: center; }
+        .hero-auth-register:hover { background: #b8952a; }
+        .hero-auth-logout { font-size: 10px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(220,38,38,0.75); background: none; padding: 8px 18px; border: 1px solid rgba(220,38,38,0.3); cursor: pointer; font-family: 'Jost', sans-serif; transition: all 0.2s; }
+        .hero-auth-logout:hover { color: #ef4444; border-color: rgba(220,38,38,0.6); }
+
         .hero-dots { position: absolute; bottom: 40px; left: 60px; display: flex; gap: 10px; z-index: 2; }
         .hero-dot { width: 28px; height: 2px; background: rgba(255,255,255,0.3); cursor: pointer; transition: background 0.3s, width 0.3s; border: none; }
         .hero-dot.active { background: #b8952a; width: 44px; }
@@ -516,12 +602,14 @@ export default function LandingPage({ token }) {
           <div className="nav-right">
             {!token ? (
               <>
-                <Link to="/login"    className="nav-auth-link">Sign In</Link>
-                <span className="nav-auth-sep">|</span>
-                <Link to="/register" className="nav-auth-link">Register</Link>
+                <Link to="/login"    className="nav-signin-btn">Sign In</Link>
+                <Link to="/register" className="nav-register-btn">Register</Link>
               </>
             ) : (
-              <Link to="/dashboard" className="nav-auth-link">My Bookings</Link>
+              <>
+                <Link to="/dashboard" className="nav-signin-btn">My Bookings</Link>
+                <button className="nav-logout-btn" onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("username"); window.location.reload(); }}>Sign Out</button>
+              </>
             )}
 
             {/* 🔥 Theme toggle */}
@@ -593,6 +681,19 @@ export default function LandingPage({ token }) {
               <Link to="/rooms" className="hero-btn-primary">Explore Rooms</Link>
               <span className="hero-btn-ghost" onClick={scrollToContact}>Contact Us</span>
             </div>
+
+            {/* Auth buttons in hero */}
+            {!token ? (
+              <div className={`hero-auth-row ${animIn ? "in" : ""}`}>
+                <Link to="/login"    className="hero-auth-signin">Sign In</Link>
+                <Link to="/register" className="hero-auth-register">Create Account →</Link>
+              </div>
+            ) : (
+              <div className={`hero-auth-row ${animIn ? "in" : ""}`}>
+                <Link to="/dashboard" className="hero-auth-signin">My Bookings</Link>
+                <button className="hero-auth-logout" onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("username"); window.location.reload(); }}>Sign Out</button>
+              </div>
+            )}
           </div>
           <div className="hero-dots">
             {SLIDES.map((_, i) => (

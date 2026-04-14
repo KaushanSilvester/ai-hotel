@@ -558,11 +558,30 @@ function Home() {
 
           {/* Results header */}
           <div className="results-header">
-            <div>
-              <div className="results-label">Accommodation</div>
-              <div className="results-title">Available Rooms & Suites</div>
-              <div className="results-sub">
-                {filteredRooms.length} {filteredRooms.length===1?"property":"properties"} found
+            <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+              {/* 🔥 Back to Landing Page */}
+              <button onClick={() => navigate("/")} style={{
+                display:"flex", alignItems:"center", gap:7,
+                background:"none", border:`1px solid ${T.border}`,
+                color:T.textMuted, padding:"8px 16px",
+                fontFamily:"'Jost',sans-serif", fontSize:"10px",
+                fontWeight:500, letterSpacing:"0.18em", textTransform:"uppercase",
+                cursor:"pointer", transition:"all 0.2s", flexShrink:0,
+              }}
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor="#b8952a"; e.currentTarget.style.color="#b8952a"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textMuted; }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+                </svg>
+                Home
+              </button>
+              <div>
+                <div className="results-label">Accommodation</div>
+                <div className="results-title">Available Rooms & Suites</div>
+                <div className="results-sub">
+                  {filteredRooms.length} {filteredRooms.length===1?"property":"properties"} found
+                </div>
               </div>
             </div>
             <div className="sort-wrap">

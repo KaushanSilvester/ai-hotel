@@ -34,8 +34,11 @@ function Login({ setToken }) {
       const res = await axios.post("http://localhost:8000/api/login/", form);
       localStorage.setItem("token", res.data.access);
       localStorage.setItem("username", form.username);
+      // 🔥 Save admin flag — backend returns is_staff in the response
+      localStorage.setItem("is_admin", res.data.is_staff ? "true" : "false");
       setToken(res.data.access);
-      navigate("/dashboard");
+      // Redirect admins straight to the admin panel
+      navigate(res.data.is_staff ? "/admin" : "/dashboard");
     } catch { setError("Invalid username or password. Please try again."); }
     finally { setLoading(false); }
   };

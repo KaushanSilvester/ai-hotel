@@ -97,3 +97,14 @@ EMAIL_USE_TLS        = True
 EMAIL_HOST_USER      = 'your_gmail@gmail.com'       # 🔥 CHANGE THIS
 EMAIL_HOST_PASSWORD  = 'xxxx xxxx xxxx xxxx'        # 🔥 CHANGE THIS (App Password)
 DEFAULT_FROM_EMAIL   = 'HotelAI <your_gmail@gmail.com>'  # 🔥 CHANGE THIS
+
+
+# ── 🔥 Anthropic AI Chatbot ───────────────────────────────────────────────────
+# Get your free API key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY = 'sk-ant-your-key-here'  # 🔥 CHANGE THIS
+
+
+# ── 🔥 Google Gemini AI (FREE) ────────────────────────────────────────────────
+# Get your FREE key at: https://aistudio.google.com/apikey
+# No credit card needed — generous free tier
+GEMINI_API_KEY = 'AIzaSyCmqfLuAZ33d1xPcjG0Yefd_KhDucotMyU'   # 🔥 CHANGE THIS
