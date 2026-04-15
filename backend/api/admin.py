@@ -21,3 +21,6 @@ class ReviewAdmin(admin.ModelAdmin):
     list_display  = ('user', 'room', 'rating', 'title', 'created_at')
     list_filter   = ('rating',)
     search_fields = ('user__username', 'room__room_type', 'comment')
+
+from .models import AdminNotification
+admin.site.register(AdminNotification)

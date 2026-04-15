@@ -131,7 +131,12 @@ export default function AdminDashboard() {
   const T = THEMES[theme];
   const toggleTheme = ()=>{ const n=theme==="dark"?"light":"dark"; setTheme(n); localStorage.setItem("lp_theme",n); };
 
-  const [tab,setTab]           = useState("overview");
+  // 🔥 Read tab from localStorage (set by AdminToolbar quick links)
+  const [tab,setTab] = useState(() => {
+    const saved = localStorage.getItem("admin_tab");
+    if (saved) { localStorage.removeItem("admin_tab"); return saved; }
+    return "overview";
+  });
   const [stats,setStats]       = useState(null);
   const [bookings,setBookings] = useState([]);
   const [rooms,setRooms]       = useState([]);
@@ -144,6 +149,7 @@ export default function AdminDashboard() {
   const [roomModal,setRoomModal]   = useState(false);
   const [editRoom,setEditRoom]     = useState(null);
   const [roomForm,setRoomForm]     = useState({ room_number:"",room_type:"double",price:"",capacity:2,available:true,floor:"",bed_type:"King Bed",wifi:false,ac:false,tv:false,balcony:false,minibar:false,sea_view:false,breakfast_included:false,jacuzzi:false });
+  const [roomImages, setRoomImages] = useState({ image:null, image2:null, image3:null, image4:null });
 
   const fetchStats    = useCallback(()=>{ axios.get(API("/stats/"),{headers}).then(r=>setStats(r.data)).catch(()=>{}); },[]);
   const fetchBookings = useCallback(()=>{ setLoading(true); axios.get(API("/reservations/"),{headers,params:{search}}).then(r=>setBookings(r.data)).catch(()=>setBookings([])).finally(()=>setLoading(false)); },[search]);
@@ -185,15 +191,24 @@ export default function AdminDashboard() {
   const openRoomModal = (room=null) => {
     setEditRoom(room);
     setRoomForm(room ? { room_number:room.room_number||"", room_type:room.room_type, price:room.price, capacity:room.capacity, available:room.available, floor:room.floor||"", bed_type:room.bed_type||"King Bed", wifi:room.wifi, ac:room.ac, tv:room.tv, balcony:room.balcony, minibar:room.minibar, sea_view:room.sea_view, breakfast_included:room.breakfast_included, jacuzzi:room.jacuzzi } : { room_number:"",room_type:"double",price:"",capacity:2,available:true,floor:"",bed_type:"King Bed",wifi:false,ac:false,tv:false,balcony:false,minibar:false,sea_view:false,breakfast_included:false,jacuzzi:false });
+    setRoomImages({ image:null, image2:null, image3:null, image4:null });
     setRoomModal(true);
   };
 
   const saveRoom = async () => {
     try {
+      // 🔥 Use FormData to support image file uploads
+      const fd = new FormData();
+      Object.entries(roomForm).forEach(([k, v]) => fd.append(k, v));
+      // Append image files if selected
+      Object.entries(roomImages).forEach(([k, v]) => { if (v) fd.append(k, v); });
+
+      const imgHeaders = { ...headers, "Content-Type": "multipart/form-data" };
+
       if (editRoom) {
-        await axios.patch(API(`/rooms/${editRoom.id}/update/`), roomForm, {headers});
+        await axios.patch(API(`/rooms/${editRoom.id}/update/`), fd, { headers: imgHeaders });
       } else {
-        await axios.post(API("/rooms/create/"), roomForm, {headers});
+        await axios.post(API("/rooms/create/"), fd, { headers: imgHeaders });
       }
       setRoomModal(false); fetchRooms(); fetchStats();
     } catch(e) { alert(e?.response?.data?.error||"Error saving room."); }
@@ -469,6 +484,54 @@ export default function AdminDashboard() {
               </select>
             </div>
           </div>
+          {/* 🔥 Image Upload Section */}
+          <div style={{marginTop:16}}>
+            <div style={{fontSize:"9px",letterSpacing:"0.18em",textTransform:"uppercase",color:T.textMuted,marginBottom:10}}>Room Photos</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {[
+                {key:"image",  label:"Main Photo"},
+                {key:"image2", label:"Photo 2"},
+                {key:"image3", label:"Photo 3"},
+                {key:"image4", label:"Photo 4"},
+              ].map(({key,label})=>(
+                <div key={key}>
+                  <div style={{fontSize:"9px",letterSpacing:"0.12em",textTransform:"uppercase",color:T.textMuted,marginBottom:4}}>{label}</div>
+                  <label style={{
+                    display:"flex",alignItems:"center",gap:8,
+                    padding:"8px 12px",border:`1px dashed ${T.inputBorder}`,
+                    background:T.inputBg,cursor:"pointer",
+                    fontSize:11,color:T.textMuted,transition:"border-color 0.2s"
+                  }}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor="#b8952a"}
+                    onMouseLeave={e=>e.currentTarget.style.borderColor=T.inputBorder}
+                  >
+                    <span style={{fontSize:16}}>📷</span>
+                    <span style={{color: roomImages[key] ? "#b8952a" : T.textMuted}}>
+                      {roomImages[key] ? roomImages[key].name : "Choose photo…"}
+                    </span>
+                    <input type="file" accept="image/*" style={{display:"none"}}
+                      onChange={e=>setRoomImages(prev=>({...prev,[key]:e.target.files[0]||null}))}/>
+                  </label>
+                  {/* Preview if image selected */}
+                  {roomImages[key] && (
+                    <div style={{position:"relative",marginTop:4}}>
+                      <img src={URL.createObjectURL(roomImages[key])} alt=""
+                        style={{width:"100%",height:70,objectFit:"cover",border:`1px solid ${T.border}`}}/>
+                      <button onClick={()=>setRoomImages(prev=>({...prev,[key]:null}))}
+                        style={{position:"absolute",top:2,right:2,background:"rgba(220,38,38,0.8)",
+                          border:"none",color:"#fff",width:18,height:18,cursor:"pointer",
+                          fontSize:10,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                    </div>
+                  )}
+                  {/* Show existing image for edit */}
+                  {!roomImages[key] && editRoom && editRoom[key] && (
+                    <img src={editRoom[key]} alt="" style={{width:"100%",height:70,objectFit:"cover",marginTop:4,border:`1px solid ${T.border}`,opacity:0.6}}/>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{marginTop:16}}>
             <div style={{fontSize:"9px",letterSpacing:"0.18em",textTransform:"uppercase",color:T.textMuted,marginBottom:10}}>Amenities & Flags</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>

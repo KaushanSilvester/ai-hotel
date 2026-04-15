@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
@@ -192,6 +192,28 @@ def get_room_detail(request, id):
 
 # ── Reservation Endpoints ──────────────────────────────────────────────────────
 
+# ── 🔥 Admin Notification Helper (DB-based — reliable across restarts) ────────
+def add_admin_notification(notif):
+    """Save notification to database — works across all Django workers."""
+    try:
+        from .models import AdminNotification
+        AdminNotification.objects.create(
+            type       = notif.get('type', 'new_booking'),
+            title      = notif.get('title', 'Notification'),
+            message    = notif.get('message', ''),
+            detail     = notif.get('detail', ''),
+            booking_id = notif.get('booking_id'),
+            guest      = notif.get('guest', ''),
+            room       = notif.get('room', ''),
+            is_read    = False,
+        )
+        # Keep only latest 100 notifications in DB
+        ids_to_keep = AdminNotification.objects.values_list('id', flat=True)[:100]
+        AdminNotification.objects.exclude(id__in=list(ids_to_keep)).delete()
+    except Exception as e:
+        print(f"[add_admin_notification ERROR] {e}")
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_reservation(request):
@@ -223,8 +245,47 @@ def create_reservation(request):
         if request.user.email and "@" in str(request.user.email):
             send_booking_confirmation(request.user, room, reservation)
     except Exception as email_err:
-        # Email failure must never affect the booking response
         print(f"[EMAIL SKIPPED] {email_err}")
+
+    # 🔥 Add admin PC notification
+    try:
+        import datetime as dt
+        from datetime import date
+        # Convert strings to date objects if needed
+        check_in  = reservation.check_in  if isinstance(reservation.check_in,  date) else dt.date.fromisoformat(str(reservation.check_in))
+        check_out = reservation.check_out if isinstance(reservation.check_out, date) else dt.date.fromisoformat(str(reservation.check_out))
+        nights = (check_out - check_in).days
+        payment_label = {
+            "pay_at_hotel": "Pay at Hotel",
+            "paid":         "Paid Online",
+            "stripe":       "Stripe",
+            "payhere":      "PayHere",
+        }.get(reservation.payment_method, reservation.payment_method)
+
+        notif = {
+            "id":         reservation.id,
+            "type":       "new_booking",
+            "title":      "New Booking!",
+            "message":    f"{request.user.username} booked {room.room_type}",
+            "detail":     f"Check-in: {check_in} | {nights} night(s) | {payment_label} | Rs. {int(float(reservation.amount_paid) if float(reservation.amount_paid) > 0 else float(room.price) * nights):,}",
+            "guest":      request.user.username,
+            "room":       room.room_type,
+            "check_in":   str(check_in),
+            "check_out":  str(check_out),
+            "nights":     nights,
+            "guests":     reservation.guests,
+            "payment":    payment_label,
+            "amount":     int(float(reservation.amount_paid)),
+            "booking_id": reservation.id,
+            "timestamp":  dt.datetime.now().isoformat(),
+            "read":       False,
+        }
+        add_admin_notification(notif)
+        print(f"[NOTIF OK] Booking #{reservation.id} notification saved to DB.")
+    except Exception as notif_err:
+        import traceback
+        print(f"[NOTIF ERROR] {notif_err}")
+        traceback.print_exc()
 
     return Response({
         "message": "Booking successful!",
@@ -436,3 +497,245 @@ def chat_with_aria(request):
         return Response({"reply": reply})
     except Exception as e:
         return Response({"reply": "I apologise, I'm having a brief moment. Please try again or call us at +94 52 222 2881."})
+
+
+# ── 🔥 Booking History Recommendations ───────────────────────────────────────
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recommendations(request):
+    """
+    Returns personalised room recommendations based on the user's booking history.
+    Logic:
+      1. Analyse past bookings — price range, capacity, amenities, room types
+      2. Score all rooms against those preferences
+      3. Return top 3 matches with reason labels
+    """
+    from .models import Room, Reservation
+    from django.db.models import Avg
+
+    user = request.user
+
+    # ── Get user's booking history ────────────────────────────────────────────
+    past_bookings = Reservation.objects.filter(user=user).select_related('room').order_by('-created_at')
+
+    # If no history → return top rated rooms as default
+    if not past_bookings.exists():
+        top_rooms = Room.objects.filter(available=True).order_by('-rating')[:3]
+        return Response({
+            "has_history": False,
+            "message": "Our most popular rooms right now:",
+            "rooms": [room_to_dict(r, request) for r in top_rooms],
+            "reasons": {r.id: "Top Rated" for r in top_rooms},
+        })
+
+    # ── Build preference profile from history ─────────────────────────────────
+    booked_rooms  = [b.room for b in past_bookings]
+    booked_ids    = [r.id for r in booked_rooms]
+
+    # Price preferences — avg + range
+    prices        = [float(r.price) for r in booked_rooms]
+    avg_price     = sum(prices) / len(prices)
+    max_price     = max(prices)
+    min_price     = min(prices)
+    price_range   = max_price - min_price
+
+    # Capacity preference
+    capacities    = [b.guests for b in past_bookings]
+    avg_capacity  = sum(capacities) / len(capacities)
+
+    # Amenity preferences — count how often each amenity appeared
+    amenity_counts = {}
+    for room in booked_rooms:
+        if room.wifi:               amenity_counts['wifi']               = amenity_counts.get('wifi', 0) + 1
+        if room.ac:                 amenity_counts['ac']                 = amenity_counts.get('ac', 0) + 1
+        if room.tv:                 amenity_counts['tv']                 = amenity_counts.get('tv', 0) + 1
+        if room.balcony:            amenity_counts['balcony']            = amenity_counts.get('balcony', 0) + 1
+        if room.minibar:            amenity_counts['minibar']            = amenity_counts.get('minibar', 0) + 1
+        if room.sea_view:           amenity_counts['sea_view']           = amenity_counts.get('sea_view', 0) + 1
+        if room.jacuzzi:            amenity_counts['jacuzzi']            = amenity_counts.get('jacuzzi', 0) + 1
+        if room.breakfast_included: amenity_counts['breakfast_included'] = amenity_counts.get('breakfast_included', 0) + 1
+        if room.pet_friendly:       amenity_counts['pet_friendly']       = amenity_counts.get('pet_friendly', 0) + 1
+
+    # Room type preferences
+    type_counts = {}
+    for room in booked_rooms:
+        t = room.room_type.lower()
+        type_counts[t] = type_counts.get(t, 0) + 1
+
+    # Preferred types (appeared more than once or most frequent)
+    preferred_types = sorted(type_counts, key=type_counts.get, reverse=True)[:2]
+    preferred_amenities = [k for k, v in amenity_counts.items() if v >= max(1, len(past_bookings) * 0.4)]
+
+    # ── Score all available rooms ─────────────────────────────────────────────
+    all_rooms = Room.objects.filter(available=True).exclude(id__in=booked_ids)
+
+    if not all_rooms.exists():
+        # If they've booked everything, include booked ones too
+        all_rooms = Room.objects.filter(available=True)
+
+    scored = []
+    reasons = {}
+
+    for room in all_rooms:
+        score = 0
+        room_reasons = []
+
+        # ── Price similarity (0–30 points) ────────────────────────────────────
+        price_diff = abs(float(room.price) - avg_price)
+        price_tolerance = max(price_range * 0.5, avg_price * 0.3)
+        if price_diff <= price_tolerance:
+            price_score = 30 * (1 - price_diff / (price_tolerance + 1))
+            score += price_score
+            if price_score > 20:
+                room_reasons.append("Matches your price range")
+
+        # ── Capacity match (0–25 points) ──────────────────────────────────────
+        cap_diff = abs(room.capacity - avg_capacity)
+        if cap_diff == 0:
+            score += 25
+            room_reasons.append("Perfect capacity for you")
+        elif cap_diff == 1:
+            score += 15
+        elif cap_diff == 2:
+            score += 5
+
+        # ── Amenity match (0–25 points, 5 per amenity) ────────────────────────
+        amenity_score = 0
+        matched_amenities = []
+        amenity_map = {
+            'wifi': room.wifi, 'ac': room.ac, 'tv': room.tv,
+            'balcony': room.balcony, 'minibar': room.minibar,
+            'sea_view': room.sea_view, 'jacuzzi': room.jacuzzi,
+            'breakfast_included': room.breakfast_included,
+            'pet_friendly': room.pet_friendly,
+        }
+        for amenity in preferred_amenities:
+            if amenity_map.get(amenity):
+                amenity_score += 5
+                matched_amenities.append(amenity.replace('_', ' ').title())
+
+        score += min(amenity_score, 25)
+        if matched_amenities:
+            room_reasons.append("Has " + ", ".join(matched_amenities[:2]))
+
+        # ── Room type match (0–15 points) ─────────────────────────────────────
+        for ptype in preferred_types:
+            if ptype in room.room_type.lower():
+                score += 15
+                room_reasons.append("Similar to rooms you've stayed in")
+                break
+
+        # ── Rating bonus (0–10 points) ────────────────────────────────────────
+        if float(room.rating or 0) >= 4.5:
+            score += 10
+            if "Highly rated" not in room_reasons:
+                room_reasons.append("Highly rated by guests")
+        elif float(room.rating or 0) >= 4.0:
+            score += 5
+
+        # ── Upgrade incentive — slightly higher tier ──────────────────────────
+        if float(room.price) > avg_price * 1.1 and float(room.price) < avg_price * 1.6:
+            score += 8
+            room_reasons.append("Popular upgrade choice")
+
+        scored.append((room, score, room_reasons))
+
+    # Sort by score descending
+    scored.sort(key=lambda x: x[1], reverse=True)
+    top3 = scored[:3]
+
+    if not top3:
+        top_rooms = Room.objects.filter(available=True).order_by('-rating')[:3]
+        return Response({
+            "has_history": True,
+            "message": "You might also enjoy:",
+            "rooms": [room_to_dict(r, request) for r in top_rooms],
+            "reasons": {r.id: "Top Rated" for r in top_rooms},
+        })
+
+    # ── Build response ────────────────────────────────────────────────────────
+    # Personalised message based on history
+    booking_count = past_bookings.count()
+    if booking_count == 1:
+        msg = "Based on your previous stay, you might love:"
+    elif booking_count < 5:
+        msg = "Based on your " + str(booking_count) + " stays with us, we recommend:"
+    else:
+        msg = "As a valued returning guest, our top picks for you:"
+
+    return Response({
+        "has_history":  True,
+        "booking_count": booking_count,
+        "message":      msg,
+        "preferences": {
+            "avg_price":          round(avg_price),
+            "avg_capacity":       round(avg_capacity),
+            "preferred_amenities": preferred_amenities,
+            "preferred_types":    preferred_types,
+        },
+        "rooms":   [room_to_dict(r, request) for r, s, _ in top3],
+        "reasons": {r.id: (rl[0] if rl else "Recommended for you") for r, s, rl in top3},
+        "scores":  {r.id: round(s) for r, s, _ in top3},
+    })
+
+
+# ── 🔥 Admin Notification API Endpoints (DB-based) ───────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_admin_notifications(request):
+    """Poll for notifications from database."""
+    from .models import AdminNotification
+    notifs = AdminNotification.objects.all()[:30]
+    unread_count = AdminNotification.objects.filter(is_read=False).count()
+
+    data = [{
+        "id":         n.id,
+        "type":       n.type,
+        "title":      n.title,
+        "message":    n.message,
+        "detail":     n.detail,
+        "booking_id": n.booking_id,
+        "guest":      n.guest,
+        "room":       n.room,
+        "read":       n.is_read,
+        "timestamp":  n.created_at.isoformat(),
+    } for n in notifs]
+
+    return Response({
+        "unread_count":  unread_count,
+        "notifications": data,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def mark_notifications_read(request):
+    """Mark all notifications as read."""
+    from .models import AdminNotification
+    AdminNotification.objects.filter(is_read=False).update(is_read=True)
+    return Response({"message": "All marked as read."})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def clear_notifications(request):
+    """Delete all notifications."""
+    from .models import AdminNotification
+    AdminNotification.objects.all().delete()
+    return Response({"message": "Notifications cleared."})
+
+
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def test_notification(request):
+    """Test endpoint — adds a notification to DB to verify system works."""
+    from .models import AdminNotification
+    n = AdminNotification.objects.create(
+        type    = "test",
+        title   = "Test Notification!",
+        message = "Notification system is working",
+        detail  = "If you see this — everything is set up correctly!",
+        is_read = False,
+    )
+    return Response({"message": f"Test notification #{n.id} added. Check the bell!"})

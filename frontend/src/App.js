@@ -9,6 +9,8 @@ import Payment        from "./pages/Payment";
 import LandingPage    from "./pages/LandingPage";
 import AdminDashboard from "./pages/AdminDashboard"; // 🔥 Admin panel
 import HotelChatbot   from "./pages/HotelChatbot";    // 🔥 AI Chatbot
+import AdminToolbar       from "./pages/Admintoolbar";       // 🔥 Admin Toolbar
+import AdminNotifications from "./pages/AdminNotifications"; // 🔥 Notifications
 
 // ─── Admin guard ──────────────────────────────────────────────────────────────
 function AdminRoute({ children }) {
@@ -113,6 +115,12 @@ function App() {
 
       {/* 🔥 AI Chatbot — visible on all pages except admin */}
       <HotelChatbot />
+
+      {/* 🔥 Admin Toolbar — visible on all pages when admin logged in */}
+      <AdminToolbar />
+
+      {/* 🔥 Admin Notifications Bell — fixed top-right, ALL pages */}
+      <AdminNotifications />
     </Router>
   );
 }

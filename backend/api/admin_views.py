@@ -137,29 +137,39 @@ def admin_rooms(request):
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def admin_create_room(request):
-    """Create a new room."""
+    """Create a new room — supports image upload via multipart/form-data."""
     d = request.data
     try:
         room = Room.objects.create(
             room_number=d.get('room_number'),
             room_type=d.get('room_type', 'single'),
             description=d.get('description', ''),
-            floor=d.get('floor'),
-            bed_type=d.get('bed_type'),
+            floor=d.get('floor') or None,
+            bed_type=d.get('bed_type', 'King Bed'),
             price=d.get('price', 0),
             capacity=d.get('capacity', 1),
-            available=d.get('available', True),
-            wifi=d.get('wifi', False),
-            ac=d.get('ac', False),
-            tv=d.get('tv', False),
-            balcony=d.get('balcony', False),
-            minibar=d.get('minibar', False),
-            sea_view=d.get('sea_view', False),
-            breakfast_included=d.get('breakfast_included', False),
-            pet_friendly=d.get('pet_friendly', False),
-            jacuzzi=d.get('jacuzzi', False),
-            safe=d.get('safe', False),
+            available=d.get('available') not in [False, 'false', 'False', '0'],
+            wifi=d.get('wifi') in [True, 'true', 'True', '1'],
+            ac=d.get('ac') in [True, 'true', 'True', '1'],
+            tv=d.get('tv') in [True, 'true', 'True', '1'],
+            balcony=d.get('balcony') in [True, 'true', 'True', '1'],
+            minibar=d.get('minibar') in [True, 'true', 'True', '1'],
+            sea_view=d.get('sea_view') in [True, 'true', 'True', '1'],
+            breakfast_included=d.get('breakfast_included') in [True, 'true', 'True', '1'],
+            pet_friendly=d.get('pet_friendly') in [True, 'true', 'True', '1'],
+            jacuzzi=d.get('jacuzzi') in [True, 'true', 'True', '1'],
+            safe=d.get('safe') in [True, 'true', 'True', '1'],
         )
+        # 🔥 Handle image uploads
+        if 'image' in request.FILES:
+            room.image = request.FILES['image']
+        if 'image2' in request.FILES:
+            room.image2 = request.FILES['image2']
+        if 'image3' in request.FILES:
+            room.image3 = request.FILES['image3']
+        if 'image4' in request.FILES:
+            room.image4 = request.FILES['image4']
+        room.save()
         return Response({"message": "Room created.", "id": room.id}, status=201)
     except Exception as e:
         return Response({"error": str(e)}, status=400)
@@ -180,6 +190,15 @@ def admin_update_room(request, id):
     for field in updatable:
         if field in request.data:
             setattr(room, field, request.data[field])
+    # 🔥 Handle image uploads on update too
+    if 'image' in request.FILES:
+        room.image = request.FILES['image']
+    if 'image2' in request.FILES:
+        room.image2 = request.FILES['image2']
+    if 'image3' in request.FILES:
+        room.image3 = request.FILES['image3']
+    if 'image4' in request.FILES:
+        room.image4 = request.FILES['image4']
     room.save()
     return Response({"message": "Room updated."})
 

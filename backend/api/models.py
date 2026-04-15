@@ -104,3 +104,29 @@ class Review(models.Model):
         room = self.room
         super().delete(*args, **kwargs)
         room.update_rating()
+
+
+# ── 🔥 Admin Notifications ────────────────────────────────────────────────────
+class AdminNotification(models.Model):
+    """Stores admin notifications in the database — reliable across restarts."""
+    TYPE_CHOICES = [
+        ('new_booking', 'New Booking'),
+        ('cancelled',   'Booking Cancelled'),
+        ('review',      'New Review'),
+        ('test',        'Test'),
+    ]
+    type       = models.CharField(max_length=30, choices=TYPE_CHOICES, default='new_booking')
+    title      = models.CharField(max_length=120)
+    message    = models.CharField(max_length=255)
+    detail     = models.CharField(max_length=500, blank=True)
+    booking_id = models.IntegerField(null=True, blank=True)
+    guest      = models.CharField(max_length=100, blank=True)
+    room       = models.CharField(max_length=100, blank=True)
+    is_read    = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.title} — {self.message}"

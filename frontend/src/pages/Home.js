@@ -91,6 +91,17 @@ function Home() {
   const [favorites,     setFavorites]     = useState([]);
   const [sortBy,        setSortBy]        = useState("price-asc");
   const [bookingStatus, setBookingStatus] = useState({});
+
+  // 🔥 AI Recommendation state
+  const [aiQuery,       setAiQuery]       = useState("");
+  const [aiLoading,     setAiLoading]     = useState(false);
+  const [aiResults,     setAiResults]     = useState(null);
+  const [aiMessage,     setAiMessage]     = useState("");
+
+  // 🔥 Personalised history-based recommendations
+  const [historyRecs,     setHistoryRecs]     = useState(null);
+  const [historyLoading,  setHistoryLoading]  = useState(false);
+  const [showHistoryRecs, setShowHistoryRecs] = useState(true);
   const [checkIn,       setCheckIn]       = useState("2026-02-15");
   const [checkOut,      setCheckOut]      = useState("2026-02-18");
   const [guests,        setGuests]        = useState(2);
@@ -105,10 +116,131 @@ function Home() {
       .catch(() => {});
   }, []);
 
+  // 🔥 Fetch personalised recommendations if user is logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+    setHistoryLoading(true);
+    axios.get("http://localhost:8000/api/recommendations/", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => setHistoryRecs(res.data))
+      .catch(() => setHistoryRecs(null))
+      .finally(() => setHistoryLoading(false));
+  }, []);
+
   const clearFilters = () => {
     setGuests(1); setMinPrice(0); setMaxPrice(50000);
     setSelectedTypes([]); setSelectedAmenities([]);
     setCheckIn(""); setCheckOut("");
+  };
+
+  // 🔥 AI Room Recommendation Engine
+  const getAiRecommendations = () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setAiResults(null);
+
+    const query = aiQuery.toLowerCase();
+
+    // Score each room based on query keywords
+    const scored = rooms.map(room => {
+      let score = 0;
+      const amenities = (room.amenities || []).map(a => a.toLowerCase());
+      const type      = (room.room_type || "").toLowerCase();
+      const desc      = (room.description || "").toLowerCase();
+
+      // Budget keywords → prefer lower price
+      if (/budget|cheap|afford|low.?price|economical|value/.test(query)) {
+        const maxP = Math.max(...rooms.map(r => parseFloat(r.price)));
+        score += (1 - parseFloat(room.price) / maxP) * 30;
+      }
+      // Luxury keywords → prefer higher price
+      if (/luxury|premium|best|top|finest|special|suite|vip|lavish/.test(query)) {
+        const maxP = Math.max(...rooms.map(r => parseFloat(r.price)));
+        score += (parseFloat(room.price) / maxP) * 30;
+      }
+      // Guest count
+      const guestMatch = query.match(/(\d+)\s*(people|persons?|guests?|adults?)/);
+      if (guestMatch) {
+        const needed = parseInt(guestMatch[1]);
+        if (room.capacity >= needed) score += 25;
+        else score -= 20;
+      }
+      // Solo / single
+      if (/solo|alone|single|myself|just me|1 person/.test(query)) {
+        if (room.capacity === 1) score += 25;
+        else if (room.capacity === 2) score += 10;
+      }
+      // Couple / romantic
+      if (/couple|romantic|honeymoon|anniversary|partner|spouse|wife|husband|two of us/.test(query)) {
+        if (room.capacity === 2) score += 25;
+        if (amenities.includes("balcony") || amenities.includes("sea view") || amenities.includes("ocean view")) score += 15;
+        if (/suite/.test(type)) score += 10;
+      }
+      // Family
+      if (/family|kids|children|family room|4 people/.test(query)) {
+        if (room.capacity >= 3) score += 30;
+        if (/family/.test(type)) score += 10;
+      }
+      // View keywords
+      if (/sea view|ocean view|view|scenery|scenic/.test(query)) {
+        if (amenities.includes("sea view") || amenities.includes("ocean view") || room.sea_view) score += 25;
+      }
+      // Specific amenities
+      if (/jacuzzi|hot tub/.test(query))   { if (amenities.includes("jacuzzi") || room.jacuzzi)   score += 20; }
+      if (/balcony|terrace/.test(query))   { if (amenities.includes("balcony") || room.balcony)   score += 20; }
+      if (/breakfast/.test(query))         { if (amenities.includes("breakfast") || room.breakfast_included) score += 20; }
+      if (/minibar|mini.?bar/.test(query)) { if (amenities.includes("mini bar") || room.minibar)  score += 15; }
+      if (/bathtub|bath/.test(query))      { if (amenities.includes("bathtub") || room.bathtub)   score += 15; }
+      if (/pet|dog|cat/.test(query))       { if (room.pet_friendly) score += 25; }
+      // Room type mentions
+      if (query.includes("suite"))        { if (/suite/.test(type)) score += 20; }
+      if (query.includes("single"))       { if (/single/.test(type)) score += 20; }
+      if (query.includes("double"))       { if (/double/.test(type)) score += 20; }
+      if (query.includes("deluxe"))       { if (/deluxe/.test(type)) score += 20; }
+      if (query.includes("penthouse"))    { if (/penthouse/.test(type)) score += 25; }
+      // Rating preference
+      if (/best.*review|highly rated|top rated|popular/.test(query)) {
+        score += (parseFloat(room.rating) || 0) * 5;
+      }
+      // Business / work
+      if (/business|work|desk|meeting|conference/.test(query)) {
+        if (amenities.includes("work desk") || amenities.includes("wifi")) score += 15;
+      }
+      // Always add base score for available rooms
+      if (room.available !== false) score += 5;
+
+      return { ...room, aiScore: score };
+    });
+
+    // Sort by score and take top matches
+    const top = scored
+      .filter(r => r.aiScore > 0)
+      .sort((a, b) => b.aiScore - a.aiScore)
+      .slice(0, 3);
+
+    // Generate a natural message
+    let message = "";
+    if (top.length === 0) {
+      message = "I could not find a strong match for that query. Try describing what you are looking for differently, or browse all rooms below.";
+    } else if (/budget|cheap|afford/.test(query)) {
+      message = "Here are our most affordable options that match your needs:";
+    } else if (/luxury|best|suite|premium/.test(query)) {
+      message = "Here are our finest rooms for your stay:";
+    } else if (/couple|romantic|honeymoon/.test(query)) {
+      message = "Perfect choices for a romantic stay:";
+    } else if (/family|kids/.test(query)) {
+      message = "Great options for your family:";
+    } else {
+      message = "Based on your preferences, here are my top recommendations:";
+    }
+
+    setTimeout(() => {
+      setAiResults(top);
+      setAiMessage(message);
+      setAiLoading(false);
+    }, 800); // small delay for "thinking" feel
   };
 
   const toggleType     = (t) => setSelectedTypes(p     => p.includes(t) ? p.filter(x=>x!==t) : [...p,t]);
@@ -456,6 +588,156 @@ function Home() {
         /* gold line */
         .gold-line { height: 1px; background: linear-gradient(to right, transparent, #b8952a, transparent); margin-bottom: 2px; }
 
+        /* ── HISTORY RECOMMENDATIONS PANEL ── */
+        .hist-panel {
+          background: ${T.cardBg};
+          border: 1px solid rgba(184,149,42,0.35);
+          border-left: 3px solid #b8952a;
+          padding: 22px 24px; margin-bottom: 2px;
+          transition: background 0.4s;
+        }
+        .hist-panel-top {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 16px;
+        }
+        .hist-panel-left { display: flex; align-items: center; gap: 12px; }
+        .hist-badge {
+          background: #b8952a; color: #fff;
+          font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+          text-transform: uppercase; padding: 4px 10px;
+        }
+        .hist-title {
+          font-family: 'Bodoni Moda', Georgia, serif;
+          font-size: 16px; font-weight: 400; font-style: italic;
+          color: ${T.textPrimary}; font-optical-sizing: auto;
+        }
+        .hist-sub { font-size: 11px; color: ${T.textMuted}; letter-spacing: 0.04em; margin-top: 2px; }
+        .hist-dismiss {
+          background: none; border: none; color: ${T.textMuted};
+          cursor: pointer; font-size: 11px; letter-spacing: 0.1em; font-family: 'Jost',sans-serif;
+          transition: color 0.2s;
+        }
+        .hist-dismiss:hover { color: #b8952a; }
+        .hist-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+        .hist-card {
+          flex: 1; min-width: 160px; max-width: 240px;
+          border: 1px solid ${T.border};
+          cursor: pointer; transition: border-color 0.2s, transform 0.2s;
+          background: ${T.inputBg};
+          position: relative; overflow: hidden;
+        }
+        .hist-card:hover { border-color: #b8952a; transform: translateY(-2px); }
+        .hist-card img { width: 100%; height: 100px; object-fit: cover; display: block; }
+        .hist-card-ph { width:100%; height:100px; display:flex; align-items:center; justify-content:center; font-size:28px; background:${T.border}; }
+        .hist-card-body { padding: 10px 12px; }
+        .hist-card-name {
+          font-family: 'Bodoni Moda', Georgia, serif;
+          font-size: 13px; font-weight: 400; font-style: italic;
+          color: ${T.textPrimary}; margin-bottom: 2px; font-optical-sizing: auto;
+        }
+        .hist-card-price { font-size: 11px; color: #b8952a; font-weight: 600; margin-bottom: 4px; }
+        .hist-card-reason {
+          font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+          color: ${T.textMuted}; line-height: 1.4;
+        }
+        .hist-book-btn {
+          width: 100%; padding: 8px; background: #b8952a; color: #fff; border: none;
+          font-family: 'Jost', sans-serif; font-size: 9px; font-weight: 600;
+          letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer;
+          transition: background 0.2s; margin-top: 6px;
+        }
+        .hist-book-btn:hover { background: #a07d20; }
+        .hist-skeleton {
+          height: 160px; background: ${T.inputBg};
+          border: 1px solid ${T.border};
+          animation: histPulse 1.4s ease-in-out infinite; flex: 1; min-width: 160px;
+        }
+        @keyframes histPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        .hist-pref-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+        .hist-pref-tag {
+          font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+          padding: 3px 10px; border: 1px solid rgba(184,149,42,0.3);
+          color: #b8952a; background: rgba(184,149,42,0.06);
+        }
+
+        /* ── AI RECOMMENDATION PANEL ── */
+        .ai-panel {
+          background: ${T.cardBg};
+          border: 1px solid rgba(184,149,42,0.3);
+          padding: 22px 24px; margin-bottom: 2px;
+          transition: background 0.4s;
+        }
+        .ai-panel-top {
+          display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+        }
+        .ai-panel-icon {
+          width: 32px; height: 32px; background: #b8952a;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 15px; flex-shrink: 0;
+        }
+        .ai-panel-label {
+          font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase; color: #b8952a;
+        }
+        .ai-panel-title {
+          font-family: 'Bodoni Moda', Georgia, serif;
+          font-size: 15px; font-weight: 400; font-style: italic;
+          color: ${T.textPrimary}; font-optical-sizing: auto;
+        }
+        .ai-input-row { display: flex; gap: 8px; }
+        .ai-input {
+          flex: 1; padding: 11px 14px;
+          border: 1px solid ${T.inputBorder}; background: ${T.inputBg};
+          color: ${T.textPrimary}; font-family: 'Jost', sans-serif;
+          font-size: 13px; outline: none; letter-spacing: 0.03em;
+          transition: border-color 0.2s, background 0.4s;
+        }
+        .ai-input:focus { border-color: #b8952a; }
+        .ai-input::placeholder { color: ${T.textMuted}; }
+        .ai-search-btn {
+          padding: 11px 22px; background: #b8952a; color: #fff; border: none;
+          font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600;
+          letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer;
+          transition: background 0.2s; white-space: nowrap; display: flex;
+          align-items: center; gap: 7px;
+        }
+        .ai-search-btn:hover:not(:disabled) { background: #a07d20; }
+        .ai-search-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .ai-chip {
+          padding: 4px 12px; font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+          border: 1px solid ${T.border}; color: ${T.textMuted}; cursor: pointer;
+          background: ${T.inputBg}; transition: all 0.2s;
+        }
+        .ai-chip:hover { border-color: #b8952a; color: #b8952a; }
+        .ai-results-msg {
+          font-size: 12px; color: #b8952a; margin: 14px 0 10px;
+          letter-spacing: 0.04em; display: flex; align-items: center; gap: 8px;
+        }
+        .ai-results-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ai-room-card {
+          flex: 1; min-width: 180px; max-width: 280px;
+          border: 1px solid rgba(184,149,42,0.25); overflow: hidden;
+          cursor: pointer; transition: border-color 0.2s;
+          background: ${T.cardBg};
+        }
+        .ai-room-card:hover { border-color: #b8952a; }
+        .ai-room-card img { width: 100%; height: 110px; object-fit: cover; display: block; }
+        .ai-room-card-body { padding: 10px 12px; }
+        .ai-room-name {
+          font-family: 'Bodoni Moda', Georgia, serif;
+          font-size: 13px; font-weight: 400; font-style: italic;
+          color: ${T.textPrimary}; margin-bottom: 3px; font-optical-sizing: auto;
+        }
+        .ai-room-price { font-size: 11px; color: #b8952a; font-weight: 600; margin-bottom: 6px; }
+        .ai-room-match {
+          font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+          color: ${T.textMuted};
+        }
+        .ai-match-bar { height: 2px; background: ${T.border}; margin-top: 4px; }
+        .ai-match-fill { height: 100%; background: #b8952a; }
+        @keyframes aiPulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+        .ai-thinking { animation: aiPulse 1.2s ease-in-out infinite; font-size: 12px; color: #b8952a; letter-spacing: 0.1em; }
+
         @media (max-width: 768px) {
           .home-root { flex-direction: column; padding: 16px; }
           .sidebar { width: 100%; position: static; }
@@ -592,6 +874,163 @@ function Home() {
                 <option value="rating">Top Rated</option>
               </select>
             </div>
+          </div>
+
+          {/* 🔥 Personalised History Recommendations (logged-in users) */}
+          {localStorage.getItem("token") && showHistoryRecs && (
+            <div className="hist-panel">
+              <div className="hist-panel-top">
+                <div className="hist-panel-left">
+                  <div className="hist-badge">✦ For You</div>
+                  <div>
+                    {historyLoading ? (
+                      <div className="hist-title">Finding your perfect rooms…</div>
+                    ) : historyRecs ? (
+                      <>
+                        <div className="hist-title">{historyRecs.message}</div>
+                        <div className="hist-sub">
+                          {historyRecs.has_history
+                            ? `Based on your ${historyRecs.booking_count} booking${historyRecs.booking_count > 1 ? "s" : ""} with us`
+                            : "Popular rooms our guests love"}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <button className="hist-dismiss" onClick={() => setShowHistoryRecs(false)}>Dismiss ✕</button>
+              </div>
+
+              {/* Preference tags */}
+              {historyRecs?.has_history && historyRecs?.preferences && (
+                <div className="hist-pref-tags">
+                  {historyRecs.preferences.preferred_amenities?.slice(0,4).map(a => (
+                    <span key={a} className="hist-pref-tag">{a.replace(/_/g," ")}</span>
+                  ))}
+                  {historyRecs.preferences.avg_price && (
+                    <span className="hist-pref-tag">~Rs. {Number(historyRecs.preferences.avg_price).toLocaleString()}/night</span>
+                  )}
+                  {historyRecs.preferences.avg_capacity && (
+                    <span className="hist-pref-tag">{historyRecs.preferences.avg_capacity} guest{historyRecs.preferences.avg_capacity > 1 ? "s" : ""}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Loading skeletons */}
+              {historyLoading && (
+                <div className="hist-grid">
+                  {[1,2,3].map(i => <div key={i} className="hist-skeleton"/>)}
+                </div>
+              )}
+
+              {/* Recommendation cards */}
+              {!historyLoading && historyRecs?.rooms?.length > 0 && (
+                <div className="hist-grid">
+                  {historyRecs.rooms.map(room => {
+                    const reason = historyRecs.reasons?.[room.id] || "Recommended for you";
+                    return (
+                      <div key={room.id} className="hist-card">
+                        {room.image
+                          ? <img src={room.image} alt={room.room_type}/>
+                          : <div className="hist-card-ph">🏨</div>
+                        }
+                        <div className="hist-card-body">
+                          <div className="hist-card-name">{room.room_type}</div>
+                          <div className="hist-card-price">Rs. {Number(room.price).toLocaleString()} / night</div>
+                          <div className="hist-card-reason">{reason}</div>
+                          <button className="hist-book-btn" onClick={() => navigate(`/room/${room.id}`)}>
+                            View Room →
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 🔥 AI Recommendation Panel */}
+          <div className="ai-panel">
+            <div className="ai-panel-top">
+              <div className="ai-panel-icon">✦</div>
+              <div>
+                <div className="ai-panel-label">AI Concierge</div>
+                <div className="ai-panel-title">Find your perfect room</div>
+              </div>
+            </div>
+
+            <div className="ai-input-row">
+              <input
+                className="ai-input"
+                placeholder='e.g. "A romantic room with sea view for 2 people" or "Budget room for solo traveller"'
+                value={aiQuery}
+                onChange={e => setAiQuery(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && getAiRecommendations()}
+              />
+              <button className="ai-search-btn" onClick={getAiRecommendations} disabled={aiLoading || !aiQuery.trim()}>
+                {aiLoading ? (
+                  <span className="ai-thinking">Thinking…</span>
+                ) : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Find Rooms
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quick suggestion chips */}
+            {!aiResults && !aiLoading && (
+              <div className="ai-chips">
+                {["Romantic room for 2", "Budget single room", "Family room for 4", "Luxury suite with view", "Room with jacuzzi", "Best rated room"].map(chip => (
+                  <button key={chip} className="ai-chip" onClick={() => { setAiQuery(chip); setTimeout(getAiRecommendations, 50); }}>
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* AI Results */}
+            {aiResults !== null && (
+              <>
+                <div className="ai-results-msg">
+                  <span>✦</span>
+                  <span>{aiMessage}</span>
+                  {aiResults.length > 0 && (
+                    <button onClick={() => { setAiResults(null); setAiQuery(""); }}
+                      style={{ marginLeft:"auto", background:"none", border:"none", color:T.textMuted, fontSize:11, cursor:"pointer", letterSpacing:"0.08em" }}>
+                      Clear ✕
+                    </button>
+                  )}
+                </div>
+
+                {aiResults.length > 0 && (
+                  <div className="ai-results-grid">
+                    {aiResults.map((room, idx) => {
+                      const maxScore = Math.max(...aiResults.map(r => r.aiScore));
+                      const pct      = maxScore > 0 ? Math.round((room.aiScore / maxScore) * 100) : 0;
+                      return (
+                        <div key={room.id} className="ai-room-card" onClick={() => navigate(`/room/${room.id}`)}>
+                          {room.image
+                            ? <img src={room.image} alt={room.room_type}/>
+                            : <div style={{height:110,background:T.inputBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>🏨</div>
+                          }
+                          <div className="ai-room-card-body">
+                            {idx === 0 && <div style={{fontSize:"8px",letterSpacing:"0.18em",textTransform:"uppercase",color:"#b8952a",marginBottom:3}}>★ Top Pick</div>}
+                            <div className="ai-room-name">{room.room_type}</div>
+                            <div className="ai-room-price">Rs. {Number(room.price).toLocaleString()} / night</div>
+                            <div className="ai-room-match">
+                              Match: {pct}%
+                              <div className="ai-match-bar"><div className="ai-match-fill" style={{width:`${pct}%`}}/></div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="gold-line" />
