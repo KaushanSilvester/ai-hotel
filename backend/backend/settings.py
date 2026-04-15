@@ -113,10 +113,3 @@ GEMINI_API_KEY = 'AIza-your-key-here'   # 🔥 CHANGE THIS
 # Get your FREE key at: https://console.groq.com → API Keys
 # No credit card needed — very generous free tier
 GROQ_API_KEY = 'gsk_your_groq_key_here'   # 🔥 CHANGE THIS
-
-# ── 🔥 Twilio SMS Notifications ───────────────────────────────────────────────
-# Get free credentials at: https://www.twilio.com/try-twilio
-TWILIO_ACCOUNT_SID  = 'AC320bb1150cb9fd717b0e11479f1b42d9'  # 🔥 CHANGE THIS
-TWILIO_AUTH_TOKEN   = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'    # 🔥 CHANGE THIS
-TWILIO_FROM_NUMBER  = '+18777804236'   # 🔥 Your Twilio number (e.g. +12345678901)
-ADMIN_PHONE_NUMBER  = '+940773682597'   # 🔥 Admin's real phone number to receive SMS
