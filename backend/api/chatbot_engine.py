@@ -104,7 +104,7 @@ def generate_response(user_message, user=None):
     # GREETING
     if intent == "greeting":
         name = (", " + user.username) if user and user.is_authenticated else ""
-        return ("Welcome to HotelAI" + name + "! I am Aria, your personal hotel concierge.\n\n"
+        return ("Welcome to HotelAI" + name + "! I am Silvester, your personal hotel concierge.\n\n"
                 "I can help you with:\n"
                 "- Room information and availability\n"
                 "- Pricing and amenities\n"
@@ -115,14 +115,14 @@ def generate_response(user_message, user=None):
 
     # BOT NAME
     if intent == "bot_name":
-        return ("My name is Aria!\n\n"
+        return ("My name is Silvester!\n\n"
                 "I am the AI concierge for HotelAI Luxury Resort. "
                 "I am here 24/7 to help you with everything from room bookings to hotel information.\n\n"
                 "How may I assist you today?")
 
     # BOT HUMAN
     if intent == "bot_human":
-        return ("I am Aria, HotelAI's virtual concierge — not a human, but designed to be just as helpful!\n\n"
+        return ("I am Silvester, HotelAI's virtual concierge — not a human, but designed to be just as helpful!\n\n"
                 "I can answer questions about rooms, bookings, facilities, and more instantly.\n"
                 "For complex requests, our human staff are available at +94 52 222 2881.")
 

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
 // ─── Hotel system prompt ──────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are Aria, the AI concierge for HotelAI — a luxury 5-star hotel in Sri Lanka. You are warm, elegant, and knowledgeable. You speak in a refined but friendly tone, like a seasoned concierge at a grand hotel.
+const SYSTEM_PROMPT = `You are Silvester, the AI concierge for HotelAI — a luxury 5-star hotel in Sri Lanka. You are warm, elegant, and knowledgeable. You speak in a refined but friendly tone, like a seasoned concierge at a grand hotel.
 
 You help guests with:
 - Room information (types, pricing, amenities, availability)
@@ -113,7 +113,7 @@ function MessageBubble({ msg, T }) {
           color: isUser ? "rgba(255,255,255,0.55)" : T.textMuted,
           marginTop: 5, textAlign: isUser ? "right" : "left",
         }}>
-          {isUser ? "You" : "Aria · AI Concierge"} · {msg.time}
+          {isUser ? "You" : "Silvester · AI Concierge"} · {msg.time}
         </div>
       </div>
     </div>
@@ -139,7 +139,7 @@ export default function HotelChatbot() {
     } catch {}
     return [{
       role: "assistant",
-      content: "Good day! I'm Aria, your personal AI concierge at HotelAI. ✦\n\nHow may I assist you today? I can help with room inquiries, bookings, amenities, or anything about your stay.",
+      content: "Good day! I'm Silvester, your personal AI concierge at HotelAI. ✦\n\nHow may I assist you today? I can help with room inquiries, bookings, amenities, or anything about your stay.",
       time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
     }];
   };
@@ -415,7 +415,7 @@ export default function HotelChatbot() {
       `}</style>
 
       {/* ── FAB Button ── */}
-      <button className="chat-fab" onClick={() => setOpen(o => !o)} title="Chat with Aria">
+      <button className="chat-fab" onClick={() => setOpen(o => !o)} title="Chat with Silvester">
         {open ? "✕" : "✦"}
         {!open && unread > 0 && (
           <span className="chat-badge">{unread}</span>
@@ -441,7 +441,7 @@ export default function HotelChatbot() {
           <div className="chat-header">
             <div className="chat-header-avatar">✦</div>
             <div>
-              <div className="chat-header-name">Aria</div>
+              <div className="chat-header-name">Silvester</div>
               <div className="chat-header-status">
                 <span className="status-dot"/>
                 AI Concierge · HotelAI
@@ -488,7 +488,7 @@ export default function HotelChatbot() {
             <textarea
               ref={inputRef}
               className="chat-input"
-              placeholder="Ask Aria anything…"
+              placeholder="Ask Silvester anything…"
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
