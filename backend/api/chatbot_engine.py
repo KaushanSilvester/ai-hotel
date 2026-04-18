@@ -104,7 +104,7 @@ def generate_response(user_message, user=None):
     # GREETING
     if intent == "greeting":
         name = (", " + user.username) if user and user.is_authenticated else ""
-        return ("Welcome to HotelAI" + name + "! I am Silvester, your personal hotel concierge.\n\n"
+        return ("Welcome to HotelAI" + name + "! I am Silvester 😊, your personal hotel concierge.\n\n"
                 "I can help you with:\n"
                 "- Room information and availability\n"
                 "- Pricing and amenities\n"
