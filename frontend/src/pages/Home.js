@@ -102,8 +102,10 @@ function Home() {
   const [historyRecs,     setHistoryRecs]     = useState(null);
   const [historyLoading,  setHistoryLoading]  = useState(false);
   const [showHistoryRecs, setShowHistoryRecs] = useState(true);
-  const [checkIn,       setCheckIn]       = useState("2026-02-15");
-  const [checkOut,      setCheckOut]      = useState("2026-02-18");
+  const [checkIn,       setCheckIn]       = useState("");
+  const [checkOut,      setCheckOut]      = useState("");
+  const [availableIds,  setAvailableIds]  = useState(null);
+  const [checkingAvail, setCheckingAvail] = useState(false);
   const [guests,        setGuests]        = useState(2);
   const [minPrice,      setMinPrice]      = useState(0);
   const [maxPrice,      setMaxPrice]      = useState(50000);
@@ -133,6 +135,21 @@ function Home() {
     setGuests(1); setMinPrice(0); setMaxPrice(50000);
     setSelectedTypes([]); setSelectedAmenities([]);
     setCheckIn(""); setCheckOut("");
+    setAvailableIds(null);
+  };
+
+  // 🔥 Check availability from backend when dates selected
+  const checkAvailability = async (ci, co) => {
+    if (!ci || !co || new Date(co) <= new Date(ci)) { setAvailableIds(null); return; }
+    setCheckingAvail(true);
+    try {
+      const res = await axios.get("http://localhost:8000/api/rooms/", {
+        params: { check_in: ci, check_out: co, available: true }
+      });
+      setAvailableIds((res.data||[]).map(r => r.id));
+    } catch {
+      setAvailableIds(rooms.filter(r => r.available !== false).map(r => r.id));
+    } finally { setCheckingAvail(false); }
   };
 
   // 🔥 AI Room Recommendation Engine
@@ -772,13 +789,15 @@ function Home() {
           {/* Check-in / out */}
           <div className="filter-section">
             <span className="filter-label">Check-in / Check-out</span>
+            {checkingAvail && <span style={{fontSize:9,color:"#b8952a",letterSpacing:"0.1em"}}>⏳ Checking…</span>}
+            {availableIds !== null && !checkingAvail && <span style={{fontSize:9,color:"#4ade80",letterSpacing:"0.1em"}}>✓ {availableIds.length} rooms available</span>}
             <div className="input-wrap">
               <span className="input-icon"><CalIcon /></span>
-              <input type="date" value={checkIn} onChange={e=>setCheckIn(e.target.value)} style={inputStyle}/>
+              <input type="date" value={checkIn} onChange={e=>{ setCheckIn(e.target.value); checkAvailability(e.target.value, checkOut); }} style={inputStyle}/>
             </div>
             <div className="input-wrap">
               <span className="input-icon"><CalIcon /></span>
-              <input type="date" value={checkOut} onChange={e=>setCheckOut(e.target.value)} style={inputStyle}/>
+              <input type="date" value={checkOut} onChange={e=>{ setCheckOut(e.target.value); checkAvailability(checkIn, e.target.value); }} style={inputStyle}/>
             </div>
           </div>
 

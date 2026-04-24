@@ -182,6 +182,23 @@ def get_rooms(request):
         if v: rooms = rooms.filter(**{q: v})
     av = request.query_params.get('available')
     if av is not None: rooms = rooms.filter(available=(av.lower()=='true'))
+
+    # 🔥 Date availability filter — exclude rooms with conflicting reservations
+    check_in  = request.query_params.get('check_in')
+    check_out = request.query_params.get('check_out')
+    if check_in and check_out:
+        try:
+            from .models import Reservation
+            # Find rooms that are booked during the requested dates
+            booked_ids = Reservation.objects.filter(
+                check_in__lt=check_out,
+                check_out__gt=check_in
+            ).values_list('room_id', flat=True)
+            # Only return rooms that are NOT booked and ARE available
+            rooms = rooms.filter(available=True).exclude(id__in=booked_ids)
+        except Exception:
+            pass
+
     return Response([room_to_dict(r, request) for r in rooms])
 
 

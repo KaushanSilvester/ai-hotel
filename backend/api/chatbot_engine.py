@@ -1,5 +1,5 @@
 """
-HotelAI Smart Chatbot Engine
+HotelAI Smart Chatbot Engine — Silvester
 No external API needed. Reads real data from database.
 """
 import re
@@ -16,52 +16,73 @@ HOTEL_INFO = {
 }
 
 INTENTS = [
-    ("greeting",        [r"\bhi\b", r"\bhello\b", r"\bhey\b", r"\bgood (morning|afternoon|evening|day)\b"]),
-    ("bot_name",        [r"what.*your name", r"who are you", r"your name", r"what.*called", r"introduce yourself"]),
-    ("bot_human",       [r"are you (a |an )?(human|person|real|robot|bot|ai)", r"are you real"]),
-    ("bot_creator",     [r"who (made|built|created|developed) you", r"who.*creator", r"who.*behind"]),
-    ("bot_feelings",    [r"how are you", r"how.*doing", r"are you (okay|ok|good|fine|well)", r"how.*feeling"]),
-    ("hotel_name",      [r"what.*hotel.*name", r"hotel name", r"which hotel", r"what.*this place", r"name of.*hotel"]),
-    ("hotel_about",     [r"tell me about.*hotel", r"about.*hotel", r"what is hotelai", r"describe.*hotel"]),
-    ("hotel_history",   [r"history", r"when.*established", r"how old", r"founded", r"since when", r"heritage"]),
-    ("hotel_stars",     [r"how many stars", r"star hotel", r"what.*star rating"]),
-    ("rooms_available", [r"what rooms", r"available rooms", r"list.*rooms", r"show.*rooms", r"types of rooms", r"room types", r"what.*offer"]),
-    ("room_price",      [r"price", r"cost", r"how much", r"rate", r"afford"]),
-    ("room_capacity",   [r"how many (people|guests|persons)", r"capacity", r"accommodate"]),
-    ("room_amenities",  [r"amenities", r"facilities", r"wifi", r"\bac\b", r"\btv\b", r"balcony", r"minibar", r"jacuzzi", r"sea view"]),
-    ("suite_info",      [r"suite", r"ocean view", r"best room", r"luxury room", r"most expensive"]),
-    ("budget_room",     [r"cheapest", r"budget", r"affordable", r"lowest price", r"cheap room"]),
-    ("family_room",     [r"family room", r"room for family", r"room for.*kids", r"room for.*children"]),
-    ("availability",    [r"availab", r"vacant", r"free.*room", r"room.*free"]),
-    ("how_to_book",     [r"how.*book", r"how.*reserve", r"how.*make.*booking", r"steps.*book"]),
-    ("my_booking",      [r"my booking", r"my reservation", r"view.*booking", r"check.*my"]),
-    ("cancel_booking",  [r"cancel", r"cancellation", r"refund"]),
-    ("payment",         [r"payment", r"\bpay\b", r"credit card", r"stripe", r"payhere", r"cash"]),
-    ("checkin_checkout",[r"check.?in", r"check.?out", r"arrival", r"departure", r"time.*arrive"]),
-    ("restaurant",      [r"restaurant", r"food", r"dining", r"eat", r"breakfast", r"lunch", r"dinner", r"meal"]),
-    ("spa",             [r"spa", r"massage", r"wellness", r"relax", r"treatment"]),
-    ("pool",            [r"pool", r"swim"]),
-    ("gym",             [r"gym", r"fitness", r"workout", r"exercise"]),
-    ("wifi",            [r"wifi", r"internet", r"wi-fi", r"wireless"]),
-    ("parking",         [r"parking", r"car park"]),
-    ("pets",            [r"pet", r"dog", r"cat", r"animal"]),
-    ("smoking",         [r"smok", r"cigarette"]),
-    ("children",        [r"child", r"kid", r"baby", r"infant"]),
-    ("location",        [r"where.*hotel", r"location", r"address", r"directions", r"nuwara eliya"]),
-    ("contact",         [r"contact", r"phone", r"call", r"email", r"whatsapp", r"reach"]),
-    ("nearby",          [r"nearby", r"around here", r"attraction", r"places to visit", r"things to do", r"sightseeing"]),
-    ("transport",       [r"transport", r"taxi", r"airport.*pickup", r"how to get", r"from colombo", r"from kandy"]),
-    ("special_request", [r"special request", r"surprise", r"anniversary", r"honeymoon", r"birthday", r"romantic", r"proposal"]),
-    ("events",          [r"event", r"wedding", r"conference", r"meeting", r"party", r"function", r"banquet"]),
-    ("rating",          [r"rating", r"review", r"star", r"feedback", r"quality"]),
-    ("weather",         [r"weather", r"temperature", r"climate", r"raining", r"cold", r"warm"]),
-    ("recommend",       [r"recommend", r"suggest", r"best room", r"which room.*choose", r"what.*should i book"]),
-    ("compliment",      [r"you are great", r"you are awesome", r"amazing", r"love this", r"well done", r"helpful"]),
-    ("complaint",       [r"not good", r"bad service", r"disappoint", r"complain", r"worst"]),
-    ("joke",            [r"tell.*joke", r"make me laugh", r"funny"]),
-    ("language",        [r"speak.*sinhala", r"speak.*tamil", r"other language", r"do you speak"]),
-    ("goodbye",         [r"\bbye\b", r"\bgoodbye\b", r"\bsee you\b", r"\bthanks\b", r"\bthank you\b", r"\bthank\b"]),
-    ("help",            [r"\bhelp\b", r"what can you", r"what do you know", r"capabilities"]),
+    ("greeting",         [r"\bhi\b", r"\bhello\b", r"\bhey\b", r"\bgood (morning|afternoon|evening|day)\b", r"\bwassup\b", r"\bgreetings\b", r"\bsup\b"]),
+    ("bot_name",         [r"what.*your name", r"who are you", r"your name", r"what.*called", r"introduce yourself"]),
+    ("bot_human",        [r"are you (a |an )?(human|person|real|robot|bot|ai)", r"are you real"]),
+    ("bot_creator",      [r"who (made|built|created|developed) you", r"who.*creator", r"who.*behind"]),
+    ("bot_feelings",     [r"how are you", r"how.*doing", r"are you (okay|ok|good|fine|well)", r"how.*feeling"]),
+    ("hotel_name",       [r"what.*hotel.*name", r"hotel name", r"which hotel", r"what.*this place", r"name of.*hotel"]),
+    ("hotel_about",      [r"tell me about.*hotel", r"about.*hotel", r"what is hotelai", r"describe.*hotel"]),
+    ("hotel_history",    [r"history", r"when.*established", r"how old", r"founded", r"since when", r"heritage"]),
+    ("hotel_stars",      [r"how many stars", r"star hotel", r"what.*star rating"]),
+
+    # 🔥 Smart capacity matching - catches all variations
+    ("rooms_by_capacity", [
+        r"\d+\s*(member|person|people|guest|adult|pax|persons|members|adults|guests)",
+        r"room for \d+",
+        r"need.*\d+.*room",
+        r"room.*\d+.*(people|person|member|guest|adult)",
+        r"\d+.*(need|want|looking).*room",
+        r"(we are|there are|for|party of|group of) \d+",
+        r"accommodate \d+",
+        r"(fit|sleep|hold|house) \d+",
+        r"for (one|two|three|four|five|six|seven|eight) (person|people|guest|member|adult)",
+        r"(one|two|three|four|five|six) (person|people|guest|member|adult)",
+        r"\bjust me\b", r"\bjust myself\b", r"\bsolo travell",
+        r"\bcouple\b", r"\btwo of us\b", r"\bjust the two\b",
+        r"\bfamily of \d+",
+        r"we are (a |)(couple|family|group|team|party)",
+        r"i (am|m) alone", r"travelling alone", r"by myself",
+    ]),
+
+    ("show_rooms",       [r"show.*room", r"see.*room", r"view.*room", r"list.*room", r"display.*room", r"can you show", r"show me", r"let me see.*room"]),
+    ("rooms_available",  [r"what rooms", r"available rooms", r"list.*rooms", r"types of rooms", r"room types", r"what.*offer", r"all rooms"]),
+    ("room_price",       [r"price", r"cost", r"how much", r"rate", r"afford", r"expensive", r"tariff", r"charge"]),
+    ("room_capacity",    [r"how many (people|guests|persons|members)", r"capacity", r"accommodate", r"maximum.*guests"]),
+    ("room_amenities",   [r"amenities", r"facilities", r"wifi", r"\bac\b", r"\btv\b", r"balcony", r"minibar", r"jacuzzi", r"sea view", r"features", r"included"]),
+    ("suite_info",       [r"suite", r"ocean view", r"best room", r"luxury room", r"most expensive", r"premium", r"finest"]),
+    ("budget_room",      [r"cheapest", r"budget", r"affordable", r"lowest price", r"cheap room", r"low cost", r"economical"]),
+    ("family_room",      [r"family room", r"room for family", r"room for.*kids", r"room for.*children", r"kid.*friendly"]),
+    ("availability",     [r"availab", r"vacant", r"free.*room", r"room.*free", r"empty room"]),
+    ("how_to_book",      [r"how.*book", r"how.*reserve", r"how.*make.*booking", r"steps.*book", r"want to book", r"i want.*room", r"can i book", r"make.*reservation"]),
+    ("my_booking",       [r"my booking", r"my reservation", r"view.*booking", r"check.*my", r"my reservations"]),
+    ("cancel_booking",   [r"cancel", r"cancellation", r"refund"]),
+    ("payment",          [r"payment", r"\bpay\b", r"credit card", r"stripe", r"payhere", r"cash", r"how.*pay"]),
+    ("checkin_checkout", [r"check.?in", r"check.?out", r"arrival", r"departure", r"time.*arrive", r"when.*check"]),
+    ("restaurant",       [r"restaurant", r"food", r"dining", r"eat", r"breakfast", r"lunch", r"dinner", r"meal", r"menu"]),
+    ("spa",              [r"spa", r"massage", r"wellness", r"relax", r"treatment"]),
+    ("pool",             [r"pool", r"swim"]),
+    ("gym",              [r"gym", r"fitness", r"workout", r"exercise"]),
+    ("wifi",             [r"wifi", r"internet", r"wi-fi", r"wireless", r"connection"]),
+    ("parking",          [r"parking", r"car park", r"vehicle"]),
+    ("pets",             [r"pet", r"dog", r"cat", r"animal"]),
+    ("smoking",          [r"smok", r"cigarette"]),
+    ("children",         [r"child", r"kid", r"baby", r"infant"]),
+    ("location",         [r"where.*hotel", r"location", r"address", r"directions", r"nuwara eliya", r"where are you"]),
+    ("contact",          [r"contact", r"phone", r"call", r"email", r"whatsapp", r"reach", r"get in touch", r"speak.*someone", r"talk.*human"]),
+    ("nearby",           [r"nearby", r"around here", r"attraction", r"places to visit", r"things to do", r"sightseeing", r"tourist"]),
+    ("transport",        [r"transport", r"taxi", r"airport.*pickup", r"how to get", r"from colombo", r"from kandy", r"bus", r"train"]),
+    ("special_request",  [r"special request", r"surprise", r"anniversary", r"honeymoon", r"birthday", r"romantic", r"proposal", r"decor"]),
+    ("events",           [r"event", r"wedding", r"conference", r"meeting", r"party", r"function", r"banquet", r"reception"]),
+    ("rating",           [r"rating", r"review", r"star", r"feedback", r"quality", r"how good"]),
+    ("weather",          [r"weather", r"temperature", r"climate", r"raining", r"cold", r"warm"]),
+    ("recommend",        [r"recommend", r"suggest", r"best room", r"which room.*choose", r"what.*should i book", r"advice"]),
+    ("compliment",       [r"you are great", r"you are awesome", r"amazing", r"love this", r"well done", r"helpful", r"good job"]),
+    ("complaint",        [r"not good", r"bad service", r"disappoint", r"complain", r"worst"]),
+    ("joke",             [r"tell.*joke", r"make me laugh", r"funny"]),
+    ("language",         [r"speak.*sinhala", r"speak.*tamil", r"other language", r"do you speak"]),
+    ("goodbye",          [r"\bbye\b", r"\bgoodbye\b", r"\bsee you\b", r"\bthanks\b", r"\bthank you\b", r"\bthank\b", r"take care"]),
+    ("help",             [r"\bhelp\b", r"what can you", r"what do you know", r"capabilities", r"commands", r"options"]),
 ]
 
 
@@ -74,12 +95,42 @@ def detect_intent(text):
     return "unknown"
 
 
+def extract_number(text):
+    """Extract guest count — handles digits and word numbers."""
+    word_map = {
+        r"\bjust me\b": 1, r"\bmyself\b": 1, r"\bone person\b": 1, r"\balone\b": 1, r"\bsolo\b": 1,
+        r"\btwo\b": 2, r"\b2 of us\b": 2, r"\bcouple\b": 2, r"\bpair\b": 2,
+        r"\bthree\b": 3, r"\bfour\b": 4, r"\bfive\b": 5,
+        r"\bsix\b": 6, r"\bseven\b": 7, r"\beight\b": 8,
+    }
+    text_lower = text.lower()
+    for pattern, num in word_map.items():
+        if re.search(pattern, text_lower):
+            return num
+    nums = re.findall(r"\d+", text)
+    for n in nums:
+        val = int(n)
+        if 1 <= val <= 20:
+            return val
+    return None
+
+
 def get_rooms_from_db():
     try:
         from .models import Room
         return list(Room.objects.all())
     except Exception:
         return []
+
+
+def get_rooms_for_capacity(needed):
+    try:
+        from .models import Room
+        exact  = list(Room.objects.filter(capacity=needed, available=True).order_by("price"))
+        higher = list(Room.objects.filter(capacity__gt=needed, available=True).order_by("capacity", "price"))
+        return exact, higher
+    except Exception:
+        return [], []
 
 
 def get_available_rooms():
@@ -93,9 +144,27 @@ def get_available_rooms():
 def get_user_bookings(user):
     try:
         from .models import Reservation
-        return list(Reservation.objects.filter(user=user).select_related('room').order_by('-created_at'))
+        return list(Reservation.objects.filter(user=user).select_related("room").order_by("-created_at"))
     except Exception:
         return []
+
+
+def format_room_card(room):
+    amenities = []
+    if getattr(room, "wifi", False):     amenities.append("WiFi")
+    if getattr(room, "ac", False):       amenities.append("AC")
+    if getattr(room, "sea_view", False): amenities.append("Sea View")
+    if getattr(room, "balcony", False):  amenities.append("Balcony")
+    if getattr(room, "jacuzzi", False):  amenities.append("Jacuzzi")
+    if getattr(room, "breakfast_included", False): amenities.append("Breakfast")
+    if getattr(room, "minibar", False):  amenities.append("Minibar")
+    amenity_str = " . ".join(amenities[:4]) if amenities else "Standard amenities"
+    return (
+        "- " + room.room_type + "\n"
+        "   Rs. " + str(int(float(room.price))) + "/night | "
+        "Up to " + str(room.capacity) + " guest" + ("s" if room.capacity > 1 else "") + "\n"
+        "   " + amenity_str
+    )
 
 
 def generate_response(user_message, user=None):
@@ -104,451 +173,371 @@ def generate_response(user_message, user=None):
     # GREETING
     if intent == "greeting":
         name = (", " + user.username) if user and user.is_authenticated else ""
-        return ("Welcome to HotelAI" + name + "! I am Silvester 😊, your personal hotel concierge.\n\n"
+        return ("Welcome to HotelAI" + name + "! I am Silvester, your personal hotel concierge.\n\n"
                 "I can help you with:\n"
-                "- Room information and availability\n"
+                "- Finding rooms for any number of guests\n"
                 "- Pricing and amenities\n"
-                "- How to make a booking\n"
-                "- Restaurant, spa, pool and facilities\n"
-                "- Contact and location\n\n"
-                "What would you like to know?")
+                "- Bookings and reservations\n"
+                "- Dining, spa, and facilities\n"
+                "- Location and contact\n\n"
+                "Try asking: 'I need a room for 4 people'")
+
+    # ROOMS BY CAPACITY
+    if intent in ("rooms_by_capacity",):
+        needed = extract_number(user_message)
+
+        if not needed:
+            return ("How many guests will be staying? Just tell me the number!\n\n"
+                    "Examples:\n"
+                    "- 'Room for 2 people'\n"
+                    "- 'We are 4 members'\n"
+                    "- 'I need a room for 3 guests'\n"
+                    "- 'Just me' (for 1 person)")
+
+        exact, higher = get_rooms_for_capacity(needed)
+
+        if not exact and not higher:
+            all_rooms = get_rooms_from_db()
+            max_cap = max((r.capacity for r in all_rooms), default=4) if all_rooms else 4
+            return ("Sorry, we do not have rooms for " + str(needed) + " guests right now.\n\n"
+                    "Our largest rooms accommodate up to " + str(max_cap) + " guests.\n\n"
+                    "For larger groups, contact us:\n"
+                    "Phone: +94 52 222 2881\n"
+                    "WhatsApp: +94 77 123 4567")
+
+        response = "Here are rooms for " + str(needed) + " guest" + ("s" if needed > 1 else "") + ":\n\n"
+
+        if exact:
+            response += "Perfect fit:\n"
+            for r in exact[:3]:
+                response += format_room_card(r) + "\n\n"
+
+        if higher:
+            if exact:
+                response += "Larger options also available:\n"
+            else:
+                response += "We have rooms with higher capacity:\n"
+            for r in higher[:2]:
+                response += format_room_card(r) + "\n\n"
+
+        response += "To book, visit our Rooms page or call +94 52 222 2881!"
+        return response
+
+    # SHOW ROOMS
+    if intent == "show_rooms":
+        needed = extract_number(user_message)
+        if needed:
+            exact, higher = get_rooms_for_capacity(needed)
+            if exact or higher:
+                response = "Rooms for " + str(needed) + " guest" + ("s" if needed > 1 else "") + ":\n\n"
+                for r in (exact + higher)[:4]:
+                    response += format_room_card(r) + "\n\n"
+                return response + "Visit Rooms page to book!"
+        rooms = get_available_rooms()
+        if not rooms:
+            return "No rooms available right now. Call: +94 52 222 2881"
+        response = "Here are our available rooms:\n\n"
+        for r in rooms[:5]:
+            response += format_room_card(r) + "\n\n"
+        return response + "Tell me how many guests and I will narrow it down!"
 
     # BOT NAME
     if intent == "bot_name":
         return ("My name is Silvester!\n\n"
-                "I am the AI concierge for HotelAI Luxury Resort. "
-                "I am here 24/7 to help you with everything from room bookings to hotel information.\n\n"
-                "How may I assist you today?")
+                "I am the AI concierge for HotelAI Luxury Resort, here 24/7 to help you.")
 
-    # BOT HUMAN
     if intent == "bot_human":
-        return ("I am Silvester, HotelAI's virtual concierge — not a human, but designed to be just as helpful!\n\n"
-                "I can answer questions about rooms, bookings, facilities, and more instantly.\n"
-                "For complex requests, our human staff are available at +94 52 222 2881.")
+        return ("I am Silvester, HotelAI's virtual concierge — not a human, but just as helpful!\n\n"
+                "Need a real person? Call: +94 52 222 2881")
 
-    # BOT CREATOR
     if intent == "bot_creator":
-        return ("I was built specifically for HotelAI Luxury Resort to assist guests around the clock.\n\n"
-                "I have direct access to real-time room availability, pricing, and booking information "
-                "so I can give you accurate answers instantly.\n\n"
-                "Is there anything I can help you with?")
+        return ("I was built for HotelAI Luxury Resort to assist guests around the clock.\n\n"
+                "How can I help you today?")
 
-    # BOT FEELINGS
     if intent == "bot_feelings":
-        return ("I am doing wonderfully, thank you for asking!\n\n"
-                "Always happy when I can help guests have an amazing stay at HotelAI.\n\n"
-                "How about you — what can I help you with today?")
+        return ("I am doing wonderfully, thank you!\n\n"
+                "Always happy to help guests at HotelAI. What can I do for you?")
 
-    # HOTEL NAME
     if intent == "hotel_name":
-        return ("We are HotelAI Luxury Resort!\n\n"
-                "A 5-star luxury hotel nestled in the beautiful hill country of "
-                "Nuwara Eliya, Sri Lanka — also known as the Little England of Sri Lanka.")
+        return "We are HotelAI Luxury Resort — a 5-star luxury hotel in Nuwara Eliya, Sri Lanka!"
 
-    # HOTEL ABOUT
     if intent == "hotel_about":
         rooms = get_rooms_from_db()
         count = len(rooms) if rooms else 48
-        return ("HotelAI Luxury Resort is a 5-star hotel with " + str(count) + " beautifully appointed rooms.\n\n"
-                "Set against the stunning backdrop of Nuwara Eliya's misty mountains, we offer:\n"
-                "- Luxury rooms and suites\n"
-                "- Fine dining restaurant\n"
-                "- Spa and wellness centre\n"
-                "- Swimming pool\n"
-                "- Fully equipped gym\n"
-                "- Free high-speed WiFi\n\n"
-                "Our mission is to deliver timeless luxury with warm Sri Lankan hospitality.")
+        return ("HotelAI Luxury Resort — " + str(count) + " luxury rooms in Nuwara Eliya.\n\n"
+                "We offer: Fine dining, Spa, Pool, Gym, Free WiFi\n\n"
+                "Timeless luxury with warm Sri Lankan hospitality.")
 
-    # HOTEL HISTORY
     if intent == "hotel_history":
-        return ("HotelAI Luxury Resort has a rich heritage dating back over 140 years.\n\n"
-                "Originally built during the British colonial era, our hotel has been a landmark "
-                "of elegance in Nuwara Eliya.\n\n"
-                "We have welcomed royalty, dignitaries, and discerning travellers from around the world "
-                "while preserving the timeless charm that makes us truly unique.")
+        return ("HotelAI Luxury Resort has a 140+ year heritage.\n\n"
+                "Originally built in the British colonial era, we blend historic charm with modern luxury.")
 
-    # HOTEL STARS
     if intent == "hotel_stars":
-        return ("We are a proud 5-Star Luxury Resort!\n\n"
-                "Our rating reflects our commitment to:\n"
-                "- Exceptional room quality and amenities\n"
-                "- World-class dining\n"
-                "- Outstanding personalised service\n"
-                "- Premium spa and wellness facilities\n"
-                "- Stunning location in Nuwara Eliya")
+        return "We are a proud 5-Star Luxury Resort with exceptional service and facilities!"
 
     # ROOMS AVAILABLE
     if intent == "rooms_available":
         rooms = get_available_rooms()
         if not rooms:
-            return "There are no rooms available at the moment. Please call +94 52 222 2881 for assistance."
-        lines = []
-        for r in rooms:
-            lines.append("- " + r.room_type + ": Rs. " + str(int(float(r.price))) + "/night, up to " + str(r.capacity) + " guests")
-        return ("We currently have " + str(len(rooms)) + " rooms available:\n\n" +
-                "\n".join(lines) +
-                "\n\nVisit our Rooms page to browse with photos and book directly!")
+            return "No rooms available right now. Call +94 52 222 2881"
+        response = "We have " + str(len(rooms)) + " rooms available:\n\n"
+        for r in rooms[:6]:
+            response += format_room_card(r) + "\n\n"
+        return response + "Tell me how many guests and I will find the best match!"
 
     # ROOM PRICE
     if intent == "room_price":
         rooms = get_rooms_from_db()
         if not rooms:
-            return "Please contact us at +94 52 222 2881 for current pricing."
+            return "Call +94 52 222 2881 for pricing."
         lines = []
-        for r in rooms:
-            lines.append("- " + r.room_type + ": Rs. " + str(int(float(r.price))) + " per night")
+        for r in sorted(rooms, key=lambda x: float(x.price)):
+            lines.append("- " + r.room_type + ": Rs. " + str(int(float(r.price))) + "/night | " + str(r.capacity) + " guests")
         cheapest = min(rooms, key=lambda r: float(r.price))
-        return ("Our room rates:\n\n" +
-                "\n".join(lines) +
-                "\n\nAll rates include 10% taxes. "
-                "Most affordable option: " + cheapest.room_type + " at Rs. " + str(int(float(cheapest.price))) + "/night.")
+        return ("Room rates:\n\n" + "\n".join(lines) +
+                "\n\nAll prices include 10% taxes.\n"
+                "Best value: " + cheapest.room_type + " from Rs. " + str(int(float(cheapest.price))) + "/night!")
 
     # ROOM CAPACITY
     if intent == "room_capacity":
+        needed = extract_number(user_message)
+        if needed:
+            exact, higher = get_rooms_for_capacity(needed)
+            if exact or higher:
+                response = "Rooms for " + str(needed) + " guest" + ("s" if needed > 1 else "") + ":\n\n"
+                for r in (exact + higher)[:4]:
+                    response += format_room_card(r) + "\n\n"
+                return response + "Visit Rooms page to book!"
         rooms = get_rooms_from_db()
         if not rooms:
-            return "Please contact us at +94 52 222 2881 for room capacity information."
-        lines = []
-        for r in rooms:
-            lines.append("- " + r.room_type + ": up to " + str(r.capacity) + " guests")
-        return "Room capacities:\n\n" + "\n".join(lines)
+            return "Call +94 52 222 2881 for capacity info."
+        lines = ["- " + r.room_type + ": up to " + str(r.capacity) + " guests" for r in rooms]
+        return "Room capacities:\n\n" + "\n".join(lines) + "\n\nTell me how many guests!"
 
-    # ROOM AMENITIES
     if intent == "room_amenities":
         return ("All rooms include:\n"
-                "- Free High-Speed WiFi\n"
-                "- Air Conditioning\n"
-                "- Smart TV\n"
+                "- Free WiFi, AC, Smart TV\n"
                 "- 24/7 Room Service\n"
                 "- Daily Housekeeping\n\n"
-                "Premium rooms also have balconies, sea views, jacuzzis, and mini bars.\n"
-                "Ask me about a specific room type for full details!")
+                "Premium rooms: balconies, sea views, jacuzzis, mini bars.\n"
+                "Ask about a specific room type!")
 
-    # SUITE INFO
     if intent == "suite_info":
         rooms = get_rooms_from_db()
         if rooms:
             best = max(rooms, key=lambda r: float(r.price))
-            return ("Our finest room is the " + best.room_type + "!\n\n"
-                    "Price: Rs. " + str(int(float(best.price))) + " per night\n"
-                    "Guests: up to " + str(best.capacity) + "\n\n"
-                    "Features panoramic views, premium furnishings, and exclusive amenities.\n"
-                    "Visit the Rooms page to book it!")
-        return "Our Ocean View Suite is our finest room with panoramic views and full luxury amenities."
+            return "Our finest room:\n\n" + format_room_card(best) + "\n\nVisit Rooms page to book!"
+        return "Our Ocean View Suite is our finest room with panoramic views!"
 
-    # BUDGET ROOM
     if intent == "budget_room":
         rooms = get_rooms_from_db()
         if rooms:
             cheapest = min(rooms, key=lambda r: float(r.price))
-            return ("Most affordable option: " + cheapest.room_type + "\n\n"
-                    "Price: Rs. " + str(int(float(cheapest.price))) + " per night\n"
-                    "Guests: up to " + str(cheapest.capacity) + "\n\n"
-                    "Still includes free WiFi, AC, TV, and 24/7 service. Great value for a 5-star experience!")
-        return "Our Superior Single Room is our most affordable option. Visit the Rooms page for pricing!"
+            return "Most affordable option:\n\n" + format_room_card(cheapest) + "\n\nGreat value for 5-star luxury!"
+        return "Our Superior Single Room is our most affordable option."
 
-    # FAMILY ROOM
     if intent == "family_room":
         rooms = get_rooms_from_db()
         family = [r for r in rooms if r.capacity >= 3] if rooms else []
         if family:
-            lines = ["- " + r.room_type + ": Rs. " + str(int(float(r.price))) + "/night, up to " + str(r.capacity) + " guests" for r in family]
-            return ("Rooms perfect for families:\n\n" +
-                    "\n".join(lines) +
-                    "\n\nChildren under 5 stay FREE! Cots available on request.")
-        return "We have family rooms for groups of 3 or more. Visit our Rooms page for details!"
+            response = "Family-friendly rooms:\n\n"
+            for r in family[:3]:
+                response += format_room_card(r) + "\n\n"
+            return response + "Children under 5 stay FREE!"
+        return "We have family rooms for 3+ guests. Visit our Rooms page!"
 
-    # AVAILABILITY
     if intent == "availability":
         rooms = get_available_rooms()
         count = len(rooms) if rooms else 0
         if count == 0:
-            return ("Unfortunately we are fully booked at the moment.\n\n"
-                    "Contact us for future availability:\n"
-                    "Phone: +94 52 222 2881\n"
-                    "Email: reservations@hotelai.lk")
-        return ("Great news — we have " + str(count) + " rooms available right now!\n\n"
-                "Visit our Rooms page to browse options and book directly.")
+            return "Fully booked right now.\n\nCall +94 52 222 2881 for cancellations."
+        return ("We have " + str(count) + " rooms available!\n\n"
+                "Tell me how many guests and I will find the best options!")
 
-    # HOW TO BOOK
     if intent == "how_to_book":
-        return ("Booking is easy! Here are the steps:\n\n"
+        return ("Booking steps:\n\n"
                 "1. Go to the Rooms page\n"
-                "2. Browse rooms and click Reserve Room\n"
-                "3. Select your check-in and check-out dates\n"
+                "2. Click Reserve Room\n"
+                "3. Select your dates\n"
                 "4. Choose number of guests\n"
-                "5. Click Proceed to Payment\n"
-                "6. Choose Pay Now or Pay at Hotel\n"
-                "7. Receive your email confirmation instantly!\n\n"
-                "Free cancellation with Pay at Hotel option.")
+                "5. Choose Pay Now or Pay at Hotel\n"
+                "6. Get email confirmation!\n\n"
+                "Free cancellation with Pay at Hotel.\n"
+                "Or call: +94 52 222 2881")
 
-    # MY BOOKING
     if intent == "my_booking":
         if not user or not user.is_authenticated:
-            return "Please sign in to your account to view your bookings. Go to My Bookings in the menu."
+            return "Please sign in to view your bookings."
         bookings = get_user_bookings(user)
         if not bookings:
-            return ("Hi " + user.username + "! You have no bookings yet.\n\n"
-                    "Visit the Rooms page to browse and book your perfect stay!")
+            return "Hi " + user.username + "! No bookings yet. Visit Rooms page to book!"
         lines = []
         for b in bookings[:3]:
             nights = (b.check_out - b.check_in).days
             lines.append("- " + b.room.room_type + ": " + str(b.check_in) + " to " + str(b.check_out) +
-                         " (" + str(nights) + " night" + ("s" if nights > 1 else "") + ")" +
-                         " | " + b.payment_status.replace("_", " ").title())
-        return ("Hi " + user.username + "! Your latest bookings:\n\n" +
-                "\n".join(lines) +
-                "\n\nVisit My Bookings to manage all your reservations.")
+                         " (" + str(nights) + " night" + ("s" if nights > 1 else "") + ")")
+        return "Hi " + user.username + "! Your bookings:\n\n" + "\n".join(lines) + "\n\nVisit My Bookings to manage them."
 
-    # CANCEL
     if intent == "cancel_booking":
-        return ("To cancel a booking:\n\n"
-                "1. Go to My Bookings in your dashboard\n"
-                "2. Find the reservation you want to cancel\n"
-                "3. Click the Cancel button\n\n"
-                "Free cancellation is available for Pay at Hotel bookings.\n"
-                "For paid bookings: +94 52 222 2881 or reservations@hotelai.lk")
+        return ("To cancel:\n\n"
+                "1. Go to My Bookings\n"
+                "2. Find the reservation\n"
+                "3. Click Cancel\n\n"
+                "Free cancellation for Pay at Hotel bookings.\n"
+                "For paid: +94 52 222 2881")
 
-    # PAYMENT
     if intent == "payment":
-        return ("We accept:\n\n"
+        return ("Payment methods:\n\n"
                 "- Stripe (Visa, Mastercard, Amex)\n"
-                "- PayHere (Sri Lanka cards and wallets)\n"
-                "- Pay at Hotel (cash or card on arrival)\n\n"
-                "Pay at Hotel offers free cancellation! All prices include 10% taxes.")
+                "- PayHere (Sri Lanka cards)\n"
+                "- Pay at Hotel (free cancellation!)\n\n"
+                "All prices include 10% taxes.")
 
-    # CHECK IN/OUT
     if intent == "checkin_checkout":
-        return ("Check-in: 2:00 PM\n"
-                "Check-out: 12:00 PM (noon)\n\n"
-                "Early check-in or late check-out may be available on request.\n"
-                "Call +94 52 222 2881 to arrange.")
+        return "Check-in: 2:00 PM\nCheck-out: 12:00 PM\n\nEarly/late available on request. Call +94 52 222 2881"
 
-    # RESTAURANT
     if intent == "restaurant":
-        return ("HotelAI Restaurant serves Sri Lankan and international cuisine:\n\n"
+        return ("Restaurant hours:\n\n"
                 "Breakfast: 7:00 AM - 10:30 AM\n"
                 "Lunch: 12:00 PM - 2:30 PM\n"
                 "Dinner: 7:00 PM - 10:30 PM\n\n"
-                "24/7 Room Service also available.\n"
-                "Some rooms include breakfast in the rate!")
+                "24/7 Room Service available!")
 
-    # SPA
     if intent == "spa":
-        return ("Spa and Wellness Centre:\n\n"
-                "- Full body massages\n"
-                "- Ayurvedic treatments\n"
-                "- Facial treatments\n"
-                "- Steam and sauna\n\n"
-                "Open daily: 9:00 AM - 8:00 PM\n"
-                "Advance booking recommended. Call +94 52 222 2881.")
+        return "Spa open daily 9:00 AM - 8:00 PM\nMassages, facials, ayurvedic treatments.\nCall +94 52 222 2881 to book."
 
-    # POOL
     if intent == "pool":
-        return ("Swimming Pool:\n\n"
-                "Beautiful outdoor pool available to all guests.\n"
-                "Hours: 7:00 AM - 9:00 PM\n"
-                "Towels provided. Poolside bar service available.\n"
-                "Enjoy scenic hill country views!")
+        return "Swimming pool open 7:00 AM - 9:00 PM\nTowels provided. Poolside bar available!"
 
-    # GYM
     if intent == "gym":
-        return ("Fitness Centre:\n\n"
-                "- Cardio machines (treadmills, bikes)\n"
-                "- Free weights and resistance machines\n"
-                "- Yoga mats\n\n"
-                "Open daily: 6:00 AM - 10:00 PM\n"
-                "Free for all hotel guests!")
+        return "Fitness Centre open 6:00 AM - 10:00 PM\nCardio, weights, yoga mats. Free for all guests!"
 
-    # WIFI
     if intent == "wifi":
-        return ("Free WiFi is available throughout the hotel — in all rooms, "
-                "the lobby, restaurant, and pool area.\n\n"
-                "High-speed fibre connection. Connect to HotelAI-Guest network!")
+        return "Free high-speed WiFi everywhere!\nNetwork: HotelAI-Guest — no password needed!"
 
-    # PARKING
     if intent == "parking":
-        return ("Free parking available for all guests:\n\n"
-                "- Outdoor car park (free)\n"
-                "- 24/7 security\n"
-                "- Valet service on request")
+        return "Free parking for all guests.\n24/7 security. Valet available on request."
 
-    # PETS
     if intent == "pets":
-        return ("Yes, we are pet-friendly!\n\n"
-                "Pets are welcome in our designated pet-friendly rooms.\n"
-                "Please inform us when booking. Contact: +94 52 222 2881")
+        return "Yes, pet-friendly rooms available!\nPlease inform us when booking.\nCall +94 52 222 2881"
 
-    # SMOKING
     if intent == "smoking":
-        return ("Smoking is permitted only in designated smoking rooms and outdoor areas.\n\n"
-                "Please request a smoking room when booking.")
+        return "Smoking in designated areas only.\nRequest a smoking room when booking."
 
-    # CHILDREN
     if intent == "children":
-        return ("Children are very welcome at HotelAI!\n\n"
-                "- Children under 5 stay FREE\n"
-                "- Family rooms available for up to 4 guests\n"
-                "- Cots available on request\n"
-                "- Kids menu in the restaurant")
+        return "Children very welcome!\n- Under 5 stay FREE\n- Cots on request\n- Kids menu available"
 
-    # LOCATION
     if intent == "location":
         return ("HotelAI Luxury Resort\n"
                 "Grand Hotel Road, Nuwara Eliya, Sri Lanka\n\n"
-                "Located in the scenic hill country — the 'Little England' of Sri Lanka.\n\n"
                 "From Colombo: ~5 hours by car\n"
-                "By train: Nanu Oya station (5 mins away)\n\n"
-                "Need directions? Call +94 52 222 2881")
+                "By train: Nanu Oya station (5 mins)\n\n"
+                "Call +94 52 222 2881 for directions.")
 
-    # CONTACT
     if intent == "contact":
         return ("Contact us:\n\n"
                 "Phone: +94 52 222 2881\n"
                 "WhatsApp: +94 77 123 4567\n"
-                "Email: reservations@hotelai.lk\n"
-                "Address: Grand Hotel Road, Nuwara Eliya, Sri Lanka\n\n"
-                "Reception is open 24 hours, 7 days a week.")
+                "Email: reservations@hotelai.lk\n\n"
+                "Reception open 24/7.")
 
-    # NEARBY
     if intent == "nearby":
-        return ("Things to do near HotelAI in Nuwara Eliya:\n\n"
-                "- Victoria Park (botanical gardens)\n"
+        return ("Nearby attractions:\n\n"
+                "- Victoria Park\n"
                 "- Tea Factory Tours\n"
                 "- Horton Plains National Park\n"
-                "- Gregory Lake (boat rides)\n"
-                "- World's End (cliff views)\n"
-                "- Hakgala Botanical Gardens\n"
-                "- Nuwara Eliya Town Market\n\n"
-                "Our concierge can arrange tours and transport. Call +94 52 222 2881!")
+                "- Gregory Lake\n"
+                "- World's End cliff views\n\n"
+                "We can arrange tours! Call +94 52 222 2881")
 
-    # TRANSPORT
     if intent == "transport":
-        return ("Getting to HotelAI:\n\n"
-                "From Colombo Airport: ~5.5 hours by car\n"
-                "From Colombo City: ~5 hours\n"
-                "By train: Alight at Nanu Oya Station (5 mins)\n"
+        return ("Getting here:\n\n"
+                "From Colombo: ~5 hours by car\n"
+                "By train: Nanu Oya Station (5 mins)\n"
                 "By bus: Nuwara Eliya Bus Stand (10 mins)\n\n"
-                "We can arrange a private airport pickup!\n"
+                "Private pickup available!\n"
                 "WhatsApp: +94 77 123 4567")
 
-    # SPECIAL REQUEST
     if intent == "special_request":
-        return ("We love making stays extra special!\n\n"
-                "We can arrange:\n"
-                "- Flower decoration for romantic occasions\n"
-                "- Birthday cakes and surprises\n"
-                "- Honeymoon packages with champagne\n"
+        return ("Special arrangements available:\n\n"
+                "- Flower decoration\n"
+                "- Birthday cakes\n"
+                "- Honeymoon packages\n"
                 "- Proposal setups\n"
-                "- Candlelit private dinners\n"
-                "- Anniversary celebrations\n\n"
+                "- Candlelit dinners\n\n"
                 "Contact us in advance:\n"
-                "Phone: +94 52 222 2881\n"
-                "Email: reservations@hotelai.lk")
+                "+94 52 222 2881")
 
-    # EVENTS
     if intent == "events":
-        return ("Events and Functions at HotelAI:\n\n"
+        return ("We host:\n\n"
                 "- Weddings and receptions\n"
-                "- Conferences and business meetings\n"
-                "- Birthday and anniversary parties\n"
-                "- Private dining and banquets\n"
+                "- Conferences\n"
+                "- Birthday parties\n"
                 "- Corporate retreats\n\n"
-                "Contact our events team:\n"
-                "Phone: +94 52 222 2881\n"
-                "Email: reservations@hotelai.lk")
+                "Contact: +94 52 222 2881")
 
-    # RATING
     if intent == "rating":
         rooms = get_rooms_from_db()
         if rooms:
-            avg = sum(float(r.rating) for r in rooms) / len(rooms)
-            total = sum(r.total_reviews for r in rooms)
-            return ("HotelAI Luxury Resort is rated " + str(round(avg, 1)) + "/5 "
-                    "based on " + str(total) + " guest reviews.\n\n"
-                    "We pride ourselves on exceptional luxury experiences!")
-        return "We are a 5-star luxury resort with excellent guest reviews!"
+            ratings = [float(r.rating) for r in rooms if r.rating]
+            avg = sum(ratings) / len(ratings) if ratings else 4.5
+            return "HotelAI: " + str(round(avg, 1)) + "/5 stars\n\nWe pride ourselves on exceptional luxury!"
+        return "We are a 5-star luxury resort with excellent reviews!"
 
-    # WEATHER
     if intent == "weather":
-        return ("Nuwara Eliya Weather:\n\n"
-                "Cool and misty climate year-round.\n"
-                "Average temperature: 5 to 20 degrees Celsius\n"
-                "Rainy season: May to August\n"
-                "Best time to visit: December to March\n\n"
-                "We recommend bringing a light jacket for evenings!\n"
-                "Our rooms have heating for your comfort.")
+        return ("Nuwara Eliya: cool and misty year-round.\n\n"
+                "Temperature: 5-20 degrees C\n"
+                "Best time: December - March\n\n"
+                "Bring a light jacket! Rooms have heating.")
 
-    # RECOMMEND
     if intent == "recommend":
         rooms = get_rooms_from_db()
         if rooms:
             pick = random.choice(rooms)
-            return ("My recommendation: " + pick.room_type + "!\n\n"
-                    "Price: Rs. " + str(int(float(pick.price))) + " per night\n"
-                    "Guests: up to " + str(pick.capacity) + "\n\n"
-                    "Excellent value and all the luxury of a 5-star resort.\n"
-                    "Check it out on the Rooms page!")
-        return "I recommend our Ocean View Suite for the ultimate luxury, or our Deluxe Double for great value!"
+            return "My recommendation:\n\n" + format_room_card(pick) + "\n\nCheck it out on the Rooms page!"
+        return "I recommend our Ocean View Suite for ultimate luxury!"
 
-    # COMPLIMENT
     if intent == "compliment":
-        return ("Thank you so much! That really means a lot to us!\n\n"
-                "We work hard to provide the best experience for every guest.\n"
-                "We would love to welcome you to HotelAI soon!")
+        return "Thank you so much! That means a lot to us!\n\nWe hope to welcome you to HotelAI soon!"
 
-    # COMPLAINT
     if intent == "complaint":
-        return ("I am truly sorry to hear that. Your experience matters deeply to us.\n\n"
-                "Please share your concerns with our management team:\n"
+        return ("I am sorry to hear that.\n\n"
+                "Please contact our management:\n"
                 "Phone: +94 52 222 2881\n"
-                "Email: reservations@hotelai.lk\n\n"
-                "We take all feedback seriously and will make things right.")
+                "Email: reservations@hotelai.lk")
 
-    # JOKE
     if intent == "joke":
         jokes = [
             "Why did the hotel guest bring a ladder? Because they heard the drinks were on the house!",
             "What did the ocean say to the Ocean View Suite? Nothing — it just waved!",
             "Why do hotels make great comedians? Because they always have great delivery!",
-            "What do you call a hotel room that tells jokes? A suite comedian!",
         ]
-        return random.choice(jokes) + "\n\nHope that made you smile! Is there anything else I can help with?"
+        return random.choice(jokes) + "\n\nHope that made you smile!"
 
-    # LANGUAGE
     if intent == "language":
-        return ("I currently communicate in English only.\n\n"
-                "However, our hotel staff speaks Sinhala, Tamil, and English.\n\n"
-                "For assistance in your language: +94 52 222 2881")
+        return "I communicate in English.\nOur staff speaks Sinhala, Tamil, and English.\nCall +94 52 222 2881 for assistance."
 
-    # GOODBYE
     if intent == "goodbye":
         name = (", " + user.username) if user and user.is_authenticated else ""
-        return ("Thank you for chatting with us" + name + "!\n\n"
-                "We hope to welcome you to HotelAI Luxury Resort soon.\n"
-                "Have a wonderful day!")
+        return "Thank you for chatting" + name + "!\nWe hope to welcome you to HotelAI soon. Have a wonderful day!"
 
-    # HELP
     if intent == "help":
-        return ("I can help you with:\n\n"
-                "- Rooms: availability, prices, amenities\n"
-                "- Booking: how to book, my bookings, cancellation\n"
-                "- Payment: accepted methods, policies\n"
-                "- Location: address, directions\n"
-                "- Contact: phone, WhatsApp, email\n"
-                "- Dining: restaurant hours\n"
-                "- Spa, Pool, Gym\n"
-                "- Nearby attractions\n"
-                "- Special requests and events\n"
-                "- Policies: pets, smoking, children\n\n"
-                "Just ask me anything! If you prefer to speak with a person: +94 52 222 2881")
+        return ("Here is what I can do:\n\n"
+                "- 'Room for 4 people' — find matching rooms\n"
+                "- 'Show me rooms' — see all rooms\n"
+                "- 'Cheapest room' — budget options\n"
+                "- 'How to book' — booking guide\n"
+                "- 'Restaurant hours' — dining info\n"
+                "- 'Contact details' — phone and email\n"
+                "- 'Where are you?' — location\n\n"
+                "Just ask anything!")
 
-    # UNKNOWN
-    return ("I am not sure I understood that.\n\n"
-            "Here is what I can help with:\n"
-            "- Type 'rooms' to see available rooms\n"
-            "- Type 'prices' for room rates\n"
-            "- Type 'book' to learn how to reserve\n"
-            "- Type 'contact' for our phone and email\n"
-            "- Type 'help' for all options\n\n"
+    # UNKNOWN — helpful fallback
+    return ("I want to help! Try asking:\n\n"
+            "- 'I need a room for 4 people'\n"
+            "- 'Show me available rooms'\n"
+            "- 'What is the cheapest room?'\n"
+            "- 'How do I make a booking?'\n"
+            "- 'Restaurant hours'\n"
+            "- 'Contact details'\n\n"
             "Or call us: +94 52 222 2881")

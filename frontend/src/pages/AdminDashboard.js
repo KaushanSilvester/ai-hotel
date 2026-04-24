@@ -142,7 +142,10 @@ export default function AdminDashboard() {
   const [rooms,setRooms]       = useState([]);
   const [users,setUsers]       = useState([]);
   const [reviews,setReviews]   = useState([]);
-  const [search,setSearch]     = useState("");
+  const [search,setSearch]       = useState("");
+  const [dateFrom,setDateFrom]   = useState("");
+  const [dateTo,setDateTo]       = useState("");
+  const [statusFilter,setStatus] = useState("");
   const [loading,setLoading]   = useState(false);
 
   // Room form modal
@@ -152,7 +155,21 @@ export default function AdminDashboard() {
   const [roomImages, setRoomImages] = useState({ image:null, image2:null, image3:null, image4:null });
 
   const fetchStats    = useCallback(()=>{ axios.get(API("/stats/"),{headers}).then(r=>setStats(r.data)).catch(()=>{}); },[]);
-  const fetchBookings = useCallback(()=>{ setLoading(true); axios.get(API("/reservations/"),{headers,params:{search}}).then(r=>setBookings(r.data)).catch(()=>setBookings([])).finally(()=>setLoading(false)); },[search]);
+  const fetchBookings = useCallback(()=>{
+    setLoading(true);
+    axios.get(API("/reservations/"),{headers,params:{search}})
+      .then(r=>setBookings(r.data))
+      .catch(()=>setBookings([]))
+      .finally(()=>setLoading(false));
+  },[search]);
+
+  // 🔥 Filter bookings by date range and status (client-side)
+  const filteredBookings = bookings.filter(b => {
+    if (statusFilter && b.payment_status !== statusFilter) return false;
+    if (dateFrom && b.check_in < dateFrom) return false;
+    if (dateTo   && b.check_in > dateTo)   return false;
+    return true;
+  });
   const fetchRooms    = useCallback(()=>{ axios.get(API("/rooms/"),{headers}).then(r=>setRooms(r.data)).catch(()=>{}); },[]);
   const fetchUsers    = useCallback(()=>{ axios.get(API("/users/"),{headers}).then(r=>setUsers(r.data)).catch(()=>{}); },[]);
   const fetchReviews  = useCallback(()=>{ axios.get(API("/reviews/"),{headers}).then(r=>setReviews(r.data)).catch(()=>{}); },[]);
@@ -347,19 +364,70 @@ export default function AdminDashboard() {
             {/* ── BOOKINGS ── */}
             {tab==="bookings"&&(
               <>
-                <SectionHeader label="Management" title="All Reservations" T={T}
-                  action={
+                <SectionHeader label="Management" title="All Reservations" T={T}/>
+
+                {/* 🔥 Filter bar */}
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:2,padding:"14px 0",alignItems:"flex-end"}}>
+
+                  {/* Search */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",color:T.textMuted,marginBottom:4}}>Search</div>
                     <div className="search-wrap">
                       <span className="search-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-                      <input type="search" placeholder="Search guest or room…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,paddingLeft:32,width:220}}/>
+                      <input type="search" placeholder="Guest or room…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,paddingLeft:32,width:170}}/>
                     </div>
-                  }
-                />
+                  </div>
+
+                  {/* Date From */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",color:T.textMuted,marginBottom:4}}>Check-in From</div>
+                    <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
+                      style={{...inp,width:150,cursor:"pointer"}}
+                      onFocus={e=>e.target.style.borderColor="#b8952a"}
+                      onBlur={e=>e.target.style.borderColor=T.inputBorder}/>
+                  </div>
+
+                  {/* Date To */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",color:T.textMuted,marginBottom:4}}>Check-in To</div>
+                    <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
+                      style={{...inp,width:150,cursor:"pointer"}}
+                      onFocus={e=>e.target.style.borderColor="#b8952a"}
+                      onBlur={e=>e.target.style.borderColor=T.inputBorder}/>
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <div style={{fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",color:T.textMuted,marginBottom:4}}>Status</div>
+                    <select value={statusFilter} onChange={e=>setStatus(e.target.value)}
+                      style={{...inp,width:140,cursor:"pointer"}}>
+                      <option value="">All Statuses</option>
+                      <option value="paid">Paid</option>
+                      <option value="pay_at_hotel">Pay at Hotel</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                  </div>
+
+                  {/* Clear */}
+                  {(dateFrom||dateTo||statusFilter||search) && (
+                    <div style={{alignSelf:"flex-end"}}>
+                      <button onClick={()=>{setDateFrom("");setDateTo("");setStatus("");setSearch("");}}
+                        style={{...inp,width:"auto",padding:"9px 14px",cursor:"pointer",color:"rgba(220,38,38,0.7)",borderColor:"rgba(220,38,38,0.25)",background:"none"}}>
+                        ✕ Clear Filters
+                      </button>
+                    </div>
+                  )}
+
+                  <div style={{alignSelf:"flex-end",marginLeft:"auto",fontSize:11,color:T.textMuted}}>
+                    {filteredBookings.length} of {bookings.length} results
+                  </div>
+                </div>
+
                 <div className="gold-line"/>
                 <div style={{background:T.tableBg,border:`1px solid ${T.border}`,marginTop:2}}>
                   <Table T={T}
                     cols={["#","Guest","Room","Check-in","Check-out","Nights","Guests","Payment","Status","Actions"]}
-                    rows={bookings.map(b=>{
+                    rows={filteredBookings.map(b=>{
                       const nights = Math.round((new Date(b.check_out)-new Date(b.check_in))/(1000*60*60*24));
                       const ps     = paymentColor(b.payment_status);
                       return [
